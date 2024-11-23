@@ -45,18 +45,27 @@ points.
 
 #### 2. **Kernel (RBF Kernel)**
 The kernel \( k(x, x') \) used in this implementation is the **Radial Basis Function (RBF)** kernel, defined as:
+
 $$
 k(x, x') = \sigma^2 \exp\left(-\frac{(x - x')^2}{2\ell^2}\right),
 $$
+
 where:
+
 - \( \ell \): Length scale parameter that controls the smoothness of the function.
 - \( \sigma^2 \): Variance parameter that controls the amplitude of the function.
 
 #### 3. **Model Training**
-The training process involves computing the posterior distribution of the Gaussian Process. Given the training data \( \mathbf{X}_{\text{train}} \) and \( \mathbf{y}_{\text{train}} \), the kernel matrix is computed as:
+The training process involves computing the posterior distribution of the Gaussian Process. Given the training data
+
+ \( \mathbf{X}_{\text{train}} \) and \( \mathbf{y}_{\text{train}} \)
+ 
+ , the kernel matrix is computed as:
+
 $$
 K(\mathbf{X}_{\text{train}}, \mathbf{X}_{\text{train}}) = k(\mathbf{X}_{\text{train}}, \mathbf{X}_{\text{train}}) + \sigma_n^2 I,
 $$
+
 where:
 - \( \sigma_n^2 \): Noise variance parameter.
 - \( I \): Identity matrix.
