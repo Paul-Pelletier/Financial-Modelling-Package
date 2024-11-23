@@ -31,7 +31,10 @@ This model is particularly useful for interpolation and can capture non-linear p
 #### 1. **Gaussian Process Definition**
 A Gaussian Process (GP) is defined as:
 
-$$ f(x) \sim \mathcal{GP}(m(x), k(x, x')) $$
+$$ 
+f(x) \sim \mathcal{GP}(m(x), k(x, x'))
+$$
+
 where:
 
 - \( m(x) \): Mean function (typically set to 0 in most practical cases).
