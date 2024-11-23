@@ -40,7 +40,7 @@ class PolynomialDegree3Model:
             return tf.reduce_mean(tf.square(model_rates - forward_rates[tf.newaxis, :]), axis=1)
 
         # Optimize parameters
-        for step in range(10):
+        for step in range(50):
             with tf.GradientTape() as tape:
                 losses = loss_fn(params)
             
