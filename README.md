@@ -38,7 +38,10 @@ $$
 where:
 
 - \( m(x) \): Mean function (typically set to 0 in most practical cases).
-- \( k(x, x') \): Covariance function or kernel that defines the relationship between points.
+- \( k(x, x') \): Covariance function or kernel that defines the relationship between 
+
+
+points.
 
 #### 2. **Kernel (RBF Kernel)**
 The kernel \( k(x, x') \) used in this implementation is the **Radial Basis Function (RBF)** kernel, defined as:
