@@ -1,16 +1,18 @@
 import pandas as pd
 import pyodbc
 from sqlalchemy import create_engine
+import time
 
 class DatabaseFetcher:
     """
     Fetches data from an SQL database.
     
     Supports both pyodbc and sqlalchemy for fetching data.
+    Tracks and displays connection time for performance monitoring.
     """
     def __init__(self, connection_string: str, use_sqlalchemy: bool = False):
         """
-        Initializes the DatabaseFetcher.
+        Initializes the DatabaseFetcher and times the connection setup.
 
         Parameters:
         ----------
@@ -23,12 +25,26 @@ class DatabaseFetcher:
         """
         self.connection_string = connection_string
         self.use_sqlalchemy = use_sqlalchemy
+        self.connection_time = None  # Store connection time for performance tracking
 
         if self.use_sqlalchemy:
             try:
+                start_time = time.time()
                 self.engine = create_engine(self.connection_string)
+                end_time = time.time()
+                self.connection_time = end_time - start_time
+                print(f"SQLAlchemy engine created in {self.connection_time * 1000:.2f} ms")
             except Exception as e:
                 raise ValueError(f"Failed to create SQLAlchemy engine: {e}")
+        else:
+            try:
+                start_time = time.time()
+                self.conn = pyodbc.connect(self.connection_string)
+                end_time = time.time()
+                self.connection_time = end_time - start_time
+                print(f"pyodbc connection established in {self.connection_time * 1000:.2f} ms")
+            except Exception as e:
+                raise ValueError(f"Failed to connect using pyodbc: {e}")
 
     def fetch(self, query: str) -> pd.DataFrame:
         """
@@ -54,9 +70,20 @@ class DatabaseFetcher:
         else:
             # Use pyodbc for connection
             try:
-                conn = pyodbc.connect(self.connection_string)
-                df = pd.read_sql(query, conn)
-                conn.close()
+                cursor = self.conn.cursor()
+                start_time = time.time()
+                df = pd.read_sql(query, self.conn)
+                end_time = time.time()
+                print(f"Query executed in {end_time - start_time:.4f} seconds")
                 return df
             except Exception as e:
                 raise ValueError(f"Failed to execute query using pyodbc: {e}")
+
+    def close(self):
+        """Closes the database connection."""
+        if not self.use_sqlalchemy:
+            try:
+                self.conn.close()
+                print("pyodbc connection closed.")
+            except Exception as e:
+                print(f"Error closing pyodbc connection: {e}")

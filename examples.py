@@ -25,7 +25,10 @@ FROM [DataMining].[dbo].[OptionData]
 
 # Fetch data
 try:
+    start_time = time.time()
     data = fetcher.fetch(query)
+    execution_time = time.time() - start_time
     print(data.head())
+    print(f"Query executed in {execution_time:.4f} seconds")
 except ValueError as e:
     print(f"Error: {e}")
