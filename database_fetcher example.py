@@ -18,21 +18,18 @@ connection_string = (
 fetcher = DatabaseFetcher(connection_string, use_sqlalchemy=False)
 
 # Define a SQL query
-query = ["""
+queries = ["""
 SELECT TOP (100) [QUOTE_UNIXTIME], [QUOTE_READTIME], [QUOTE_DATE]
 FROM [DataMining].[dbo].[OptionData]
-""",
-"""SELECT TOP (100) [QUOTE_UNIXTIME], [QUOTE_READTIME], [QUOTE_DATE]
-FROM [DataMining].[dbo].[OptionData]
-"""]
+"""]*10
 
 # Fetch data
 try:
-    start_time = time.time()
-    data_0 = fetcher.fetch(query[0])
-    data_1 = fetcher.fetch(query[1])
-    execution_time = time.time() - start_time
-    print(data_0.head())
-    print(f"Queries executed in {execution_time:.4f} seconds")
+    for query_number, query in enumerate(queries):
+        start_time = time.time()
+        data = fetcher.fetch(query)
+        execution_time = time.time() - start_time
+        #print(data_0.head())
+        #print(f"Query number {query_number+1} executed in {execution_time:.4f} seconds")
 except ValueError as e:
     print(f"Error: {e}")
