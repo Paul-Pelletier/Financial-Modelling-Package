@@ -13,6 +13,9 @@ where:
 - \( S \): Spot price of the underlying asset.
 - \( K \): Strike price.
 
+$$\text{Criterion} = -\frac{C - P - S}{K}$$
+
+
 This criterion represents the **discount factor** applied to the strike price in the standard call-put parity equation.
 
 ---
