@@ -1,29 +1,42 @@
 import numpy as np
-from modelling.NSS_model import ExtendedNSSModel
+from modelling.NSS_model import PolynomialDegree3Model
 import matplotlib.pyplot as plt
 
-# Time to maturity
-maturities = np.array([0.5, 1, 2, 3, 5, 7, 10, 20], dtype=np.float32)
+# Maturities (in years) and forward rates
+maturities = np.array([
+    0, 0.006219178, 0.014438356, 0.019917808, 0.02539726,
+    0.033616438, 0.03909589, 0.044575342, 0.055534247, 0.058273973,
+    0.063753425, 0.071972603, 0.077452055, 0.080191781, 0.082931507,
+    0.102109589, 0.121287671, 0.15690411, 0.197890411, 0.236246575,
+    0.291041096, 0.323917808, 0.408849315, 0.466383562, 0.485561644,
+    0.71569863, 0.74309589, 0.965123288, 0.995260274, 1.041835616,
+    1.214328767, 1.463643836, 1.962383562, 2.959643836
+], dtype=np.float32)
 
-# Observed forward rates with more curvature (hump and dip)
-forward_rates = np.array([0.012, 0.018, 0.028, 0.025, 0.032, 0.030, 0.029, 0.027], dtype=np.float32)
+forward_rates = np.array([
+    2469.3845, 2469.5146, 2469.424727, 2469.165166, 2469.934033,
+    2469.777096, 2469.329042, 2470.717691, 2469.57942, 2469.498867,
+    2471.441107, 2470.19101, 2470.385109, 2471.549498, 2470.607102,
+    2469.939569, 2470.990339, 2469.934152, 2469.93663, 2470.21689,
+    2470.60913, 2473.286687, 2472.594037, 2474.449141, 2471.79222,
+    2477.673476, 2479.040776, 2471.669135, 2452.578169, 2484.253973,
+    2472.120148, 2482.352876, 2489.121562, 2491.752884
+], dtype=np.float32)
 
-# Initialize the NSS model
-nss = ExtendedNSSModel()
-
-# Fit the model
-fitted_params = nss.fit(maturities, forward_rates)
+# Initialize and fit the model
+model = PolynomialDegree3Model()
+fitted_params = model.fit(maturities, forward_rates, num_restarts=10000)
 print("Fitted Parameters:", fitted_params)
 
 # Predict forward rates
-predicted_rates = nss.predict(maturities)
+predicted_rates = model.predict(maturities)
 print("Predicted Forward Rates:", predicted_rates.numpy())
 
-# Plot observed and predicted rates
+# Plot observed vs. predicted rates
 plt.figure(figsize=(10, 6))
 plt.plot(maturities, forward_rates, 'o-', label="Observed Forward Rates", linewidth=2)
 plt.plot(maturities, predicted_rates.numpy(), 'x--', label="Predicted Forward Rates", linewidth=2)
-plt.title("NSS Model: Observed vs. Predicted Forward Rates")
+plt.title("Polynomial Degree 3 Model: Observed vs. Predicted Forward Rates")
 plt.xlabel("Time to Maturity (Years)")
 plt.ylabel("Forward Rate")
 plt.legend()
