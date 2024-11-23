@@ -1,5 +1,5 @@
 import numpy as np
-from modelling.NSS_model import PolynomialDegree3Model
+from modelling.gaussian_process_model import GaussianProcessModel
 import matplotlib.pyplot as plt
 
 # Maturities (in years) and forward rates
@@ -23,9 +23,9 @@ forward_rates = np.array([
     2472.120148, 2482.352876, 2489.121562, 2491.752884
 ], dtype=np.float32)
 
-# Initialize and fit the model
-model = PolynomialDegree3Model()
-fitted_params = model.fit(maturities, forward_rates, num_restarts=10000)
+# Initialize and fit the Gaussian Process model
+model = GaussianProcessModel(length_scale=0.1, variance=1000.0, noise_variance=1e-2)
+fitted_params = model.fit(maturities, forward_rates)
 print("Fitted Parameters:", fitted_params)
 
 # Predict forward rates
@@ -36,7 +36,7 @@ print("Predicted Forward Rates:", predicted_rates.numpy())
 plt.figure(figsize=(10, 6))
 plt.plot(maturities, forward_rates, 'o-', label="Observed Forward Rates", linewidth=2)
 plt.plot(maturities, predicted_rates.numpy(), 'x--', label="Predicted Forward Rates", linewidth=2)
-plt.title("Polynomial Degree 3 Model: Observed vs. Predicted Forward Rates")
+plt.title("Gaussian Process Model: Observed vs. Predicted Forward Rates")
 plt.xlabel("Time to Maturity (Years)")
 plt.ylabel("Forward Rate")
 plt.legend()
