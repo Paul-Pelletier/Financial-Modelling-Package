@@ -10,6 +10,10 @@ This repository contains implementations of various financial models for data an
    - [Mathematical Details](#mathematical-details)
    - [Usage](#usage)
 2. [Call-Put Parity Criterion](#call-put-parity-criterion)
+   - [Introduction](#introduction)
+   - [Mathematical Derivation](#mathematical-derivation)
+   - [Interpretation](#interpretation)
+   - [Practical Application](#practical-application)
 3. [Other Models (NSS, SABR, etc.)](#other-models)
 
 ---
@@ -72,6 +76,8 @@ The model includes three key hyperparameters:
 - Length scale (\( \ell \)): Controls the smoothness of the fitted curve.
 - Variance (\( \sigma^2 \)): Determines the amplitude of variations in the target.
 - Noise variance (\( \sigma_n^2 \)): Models the noise in the data.
+
+---
 
 ### Usage
 
