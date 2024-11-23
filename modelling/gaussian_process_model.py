@@ -72,3 +72,14 @@ class GaussianProcessModel:
         # Compute the predictive mean
         mean = tf.linalg.matmul(K_star, self.alpha)
         return tf.squeeze(mean)
+
+    def get_parameters(self):
+        """
+        Get the fitted model parameters.
+        :return: A dictionary containing the parameters of the model.
+        """
+        return {
+            "length_scale": self.length_scale,
+            "variance": self.variance,
+            "noise_variance": self.noise_variance
+        }
