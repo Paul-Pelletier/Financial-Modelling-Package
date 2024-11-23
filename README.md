@@ -55,6 +55,7 @@ where:
 - \( \ell \): Length scale parameter that controls the smoothness of the function.
 - \( \sigma^2 \): Variance parameter that controls the amplitude of the function.
 
+
 #### 3. **Model Training**
 The training process involves computing the posterior distribution of the Gaussian Process. Given the training data
 
