@@ -54,7 +54,7 @@ class SABRModelGPU:
                        (A * z / x_z) * B * C)
         return vol
 
-    def fit(self, strikes, market_vols, F, T, learning_rate=0.1, epochs=1000):
+    def fit(self, strikes, market_vols, F, T, learning_rate=0.1, epochs=200):
         """
         Calibrate the SABR model parameters to market implied volatilities using GPU-accelerated TensorFlow.
         :param strikes: Tensor of strike prices.
