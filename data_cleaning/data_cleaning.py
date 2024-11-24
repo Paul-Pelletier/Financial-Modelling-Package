@@ -5,6 +5,7 @@ class DataCleaner:
     """
     Cleans raw data, trims values by percentiles, and computes weighted averages
     for observations with the same key column (e.g., YTE), while excluding single data points.
+    Additionally, it includes checks and enhancements specific to SABR model fitting.
     """
 
     def __init__(self, key_column="YTE", value_column="calc", weight_column="volume"):
@@ -27,6 +28,7 @@ class DataCleaner:
     def clean_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Cleans the input DataFrame by trimming and applying weighted aggregation.
+        Additional filtering specific to SABR model fitting is also applied.
 
         Parameters:
         ----------
@@ -44,7 +46,10 @@ class DataCleaner:
         # Step 2: Trim data by percentiles (25th and 75th)
         data = self._trim_by_percentiles(data)
 
-        # Step 3: Compute weighted average for each unique key_column
+        # Step 3: Apply SABR-specific data cleaning (e.g., IV filtering, strike/underlying filtering)
+        data = self._apply_sabr_data_cleaning(data)
+
+        # Step 4: Compute weighted average for each unique key_column
         cleaned_data = self._compute_weighted_average(data)
 
         return cleaned_data
@@ -93,6 +98,39 @@ class DataCleaner:
             trimmed_data.append(trimmed_group)
 
         return pd.concat(trimmed_data, ignore_index=True)
+
+    def _apply_sabr_data_cleaning(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Applies SABR-specific data cleaning steps such as filtering out rows with invalid
+        implied volatilities, strike prices, and underlying prices.
+
+        Parameters:
+        ----------
+        data : pd.DataFrame
+            The input DataFrame.
+
+        Returns:
+        -------
+        pd.DataFrame
+            A cleaned DataFrame with valid implied volatilities and prices.
+        """
+        # Step 1: Filter for valid implied volatilities (positive and reasonable)
+        data = data[data['C_IV'] > 0]  # Calls implied volatility
+        data = data[data['P_IV'] > 0]  # Puts implied volatility
+
+        # Step 2: Filter for valid underlying prices and strike prices (non-zero)
+        data = data[data['UNDERLYING_LAST'] > 0]  # Ensure non-zero underlying price
+        data = data[data['STRIKE'] > 0]  # Ensure valid strike prices
+
+        # Step 3: Use existing mid prices for filtering if necessary
+        data = data[data['C_MID'] > 0]  # Ensure valid call mid prices
+        data = data[data['P_MID'] > 0]  # Ensure valid put mid prices
+
+        # Step 4: Filter for non-zero bid prices (optional, for stricter quality)
+        data = data[data['C_BID'] > 0]  # Valid call options
+        data = data[data['P_BID'] > 0]  # Valid put options
+
+        return data
 
     def _compute_weighted_average(self, data: pd.DataFrame) -> pd.DataFrame:
         """
