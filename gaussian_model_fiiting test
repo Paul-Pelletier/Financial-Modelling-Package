@@ -1,71 +1,30 @@
 import numpy as np
-from modelling.gaussian_process_model import GaussianProcessModel
-import matplotlib.pyplot as plt
 import pandas as pd
-import tensorflow as tf
+import matplotlib.pyplot as plt
+from modelling.gaussian_process_model import GaussianProcessModel
 
 # Load data
 data = pd.read_csv("testdata.csv", sep=";")
 
-# Aggregate multiple forward rates for the same maturity
-grouped_data = data.groupby('YTE').agg(
-    mean_forward_rate=('calc', 'mean'),
-    std_forward_rate=('calc', 'std')
-).reset_index()
-
-maturities = grouped_data['YTE']
-forward_rates = grouped_data['mean_forward_rate']
-forward_rate_std = grouped_data['std_forward_rate']
+maturities = data['YTE']
+forward_rates = data['calc']
 
 # Initialize and fit the Gaussian Process model
-model = GaussianProcessModel(length_scale=1, variance=1000, noise_variance=0.01)
-fitted_params = model.fit(maturities, forward_rates, forward_rate_std)
+model = GaussianProcessModel(length_scale=1.0, variance=100.0, noise_variance=0.01)
+fitted_params = model.fit(maturities, forward_rates)
 print("Fitted Parameters:", fitted_params)
 
 # Predict forward rates
-maturities_test = np.linspace(0, 1, 50)
-predicted_rates, uncertainty = model.predict_with_uncertainty(maturities_test)
-print("Predicted Forward Rates:", predicted_rates.numpy())
+maturities_test = np.linspace(0, 3, 100)
+predicted_rates = model.predict(maturities_test)
 
-# Plot observed vs. predicted rates with uncertainty
+# Plot observed vs. predicted rates
 plt.figure(figsize=(10, 6))
-plt.plot(maturities, forward_rates, 'o-', label="Observed Forward Rates", linewidth=2)
-plt.plot(maturities_test, predicted_rates.numpy(), 'x--', label="Predicted Forward Rates", linewidth=2)
-plt.fill_between(
-    maturities_test,
-    predicted_rates.numpy() - 2 * uncertainty.numpy(),
-    predicted_rates.numpy() + 2 * uncertainty.numpy(),
-    color="blue",
-    alpha=0.2,
-    label="2σ Credible Region",
-)
+plt.plot(maturities, forward_rates, 'o', label="Observed Forward Rates")
+plt.plot(maturities_test, predicted_rates.numpy(), '--', label="Predicted Forward Rates")
 plt.title("Gaussian Process Model: Observed vs. Predicted Forward Rates")
 plt.xlabel("Time to Maturity (Years)")
 plt.ylabel("Forward Rate")
 plt.legend()
 plt.grid()
 plt.show()
-# from itertools import product
-
-# length_scales = [1, 2, 5]
-# variances = [100, 500, 1000]
-# noise_variances = [0.01, 0.1, 1]
-
-# best_loss = float("inf")
-# best_params = None
-
-# for l, v, n in product(length_scales, variances, noise_variances):
-#     try:
-#         model = GaussianProcessModel(length_scale=l, variance=v, noise_variance=n)
-#         model.fit(maturities, forward_rates)
-#         predictions = model.predict(maturities)
-#         loss = tf.reduce_mean(tf.square(predictions - forward_rates)).numpy()
-#         print(f"Params: length_scale={l}, variance={v}, noise_variance={n}, Loss={loss}")
-#         if loss < best_loss:
-#             best_loss = loss
-#             best_params = {"length_scale": l, "variance": v, "noise_variance": n}
-#     except Exception as e:
-#         print(f"Failed params: length_scale={l}, variance={v}, noise_variance={n}, Error: {e}")
-
-# print("Best Hyperparameters:", best_params)
-

@@ -31,12 +31,11 @@ class GaussianProcessModel:
         sqdist = tf.square(X1 - tf.transpose(X2))
         return self.variance * tf.exp(-0.5 * sqdist / self.length_scale**2)
 
-    def fit(self, maturities, forward_rates, forward_rate_std=None):
+    def fit(self, maturities, forward_rates):
         """
         Fit the Gaussian Process model to the training data.
         :param maturities: Training input data (maturities).
         :param forward_rates: Training output data (forward rates).
-        :param forward_rate_std: Optional standard deviation for forward rates.
         """
         # Save training data
         self.X_train = tf.convert_to_tensor(maturities, dtype=tf.float32)
@@ -44,11 +43,7 @@ class GaussianProcessModel:
 
         # Compute the kernel matrix K(X_train, X_train)
         K = self.rbf_kernel(self.X_train, self.X_train)
-        if forward_rate_std is not None:
-            noise = tf.convert_to_tensor(forward_rate_std**2, dtype=tf.float32)
-            K += tf.linalg.diag(noise)
-        else:
-            K += self.noise_variance * tf.eye(len(self.X_train), dtype=tf.float32)
+        K += self.noise_variance * tf.eye(len(self.X_train), dtype=tf.float32)
 
         # Perform Cholesky decomposition
         self.L = tf.linalg.cholesky(K)
@@ -56,7 +51,6 @@ class GaussianProcessModel:
         # Solve for alpha: K^-1 * y_train using the Cholesky factorization
         self.alpha = tf.linalg.cholesky_solve(self.L, tf.expand_dims(y_train, axis=1))
 
-        # No parameters to return; this step computes intermediate values used in prediction
         return {"length_scale": self.length_scale, "variance": self.variance, "noise_variance": self.noise_variance}
 
     def predict(self, maturities):
@@ -77,31 +71,6 @@ class GaussianProcessModel:
         # Compute the predictive mean
         mean = tf.linalg.matmul(K_star, self.alpha)
         return tf.squeeze(mean)
-
-    def predict_with_uncertainty(self, maturities):
-        """
-        Predict forward rates with uncertainty using the fitted model.
-        :param maturities: Test input data (maturities).
-        :return: Predicted forward rates and uncertainties.
-        """
-        if self.alpha is None or self.L is None or self.X_train is None:
-            raise ValueError("Model parameters not fitted yet.")
-
-        # Convert input to tensor
-        X_test = tf.convert_to_tensor(maturities, dtype=tf.float32)
-
-        # Compute the kernel K(X_test, X_train)
-        K_star = self.rbf_kernel(X_test, self.X_train)
-        # Compute the predictive mean
-        mean = tf.linalg.matmul(K_star, self.alpha)
-        # Compute the uncertainty
-        v = tf.linalg.triangular_solve(self.L, tf.transpose(K_star))
-        K_star_star = self.rbf_kernel(X_test, X_test)
-        variance = tf.linalg.diag_part(K_star_star) - tf.reduce_sum(tf.square(v), axis=0)
-        std_dev = tf.sqrt(tf.maximum(variance, 0.0))
-        
-
-        return tf.squeeze(mean), tf.squeeze(std_dev)
 
     def get_parameters(self):
         """
