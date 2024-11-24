@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from modelling.Exponential_model import ExponentialModel
 
 # Load the cleaned data
