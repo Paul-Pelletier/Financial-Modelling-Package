@@ -10,19 +10,27 @@ maturities = data['YTE']
 forward_rates = data['calc']
 
 # Initialize and fit the Gaussian Process model
-model = GaussianProcessModel(length_scale=1.0, variance=100.0, noise_variance=0.01)
+model = GaussianProcessModel(length_scale=1, variance=100.0, noise_variance=0.01)
 fitted_params = model.fit(maturities, forward_rates)
 print("Fitted Parameters:", fitted_params)
 
-# Predict forward rates
+# Predict forward rates with uncertainty
 maturities_test = np.linspace(0, 3, 100)
-predicted_rates = model.predict(maturities_test)
+predicted_rates, uncertainty = model.predict_with_uncertainty(maturities_test)
 
-# Plot observed vs. predicted rates
+# Plot observed vs. predicted rates with uncertainty
 plt.figure(figsize=(10, 6))
-plt.plot(maturities, forward_rates, 'o', label="Observed Forward Rates")
-plt.plot(maturities_test, predicted_rates.numpy(), '--', label="Predicted Forward Rates")
-plt.title("Gaussian Process Model: Observed vs. Predicted Forward Rates")
+plt.scatter(maturities, forward_rates, label="Observed Forward Rates", color="blue", s=50, alpha=0.7)
+plt.plot(maturities_test, predicted_rates.numpy(), '--', label="Predicted Forward Rates", color="orange")
+plt.fill_between(
+    maturities_test,
+    predicted_rates.numpy() - 2 * uncertainty.numpy(),
+    predicted_rates.numpy() + 2 * uncertainty.numpy(),
+    color="blue",
+    alpha=0.2,
+    label="2σ Credible Region"
+)
+plt.title("Gaussian Process Model: Observed vs. Predicted Forward Rates with Uncertainty")
 plt.xlabel("Time to Maturity (Years)")
 plt.ylabel("Forward Rate")
 plt.legend()

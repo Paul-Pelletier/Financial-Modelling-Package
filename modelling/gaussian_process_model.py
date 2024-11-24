@@ -82,3 +82,30 @@ class GaussianProcessModel:
             "variance": self.variance,
             "noise_variance": self.noise_variance
         }
+
+    def predict_with_uncertainty(self, maturities):
+        """
+        Predict forward rates with uncertainty using the fitted model.
+        :param maturities: Test input data (maturities).
+        :return: Predicted forward rates and uncertainties (standard deviation).
+        """
+        if self.alpha is None or self.L is None or self.X_train is None:
+            raise ValueError("Model parameters not fitted yet.")
+
+        # Convert input to tensor
+        X_test = tf.convert_to_tensor(maturities, dtype=tf.float32)
+
+        # Compute the kernel K(X_test, X_train)
+        K_star = self.rbf_kernel(X_test, self.X_train)
+
+        # Compute the predictive mean
+        mean = tf.linalg.matmul(K_star, self.alpha)
+
+        # Compute the uncertainty
+        v = tf.linalg.triangular_solve(self.L, tf.transpose(K_star))
+        K_star_star = self.rbf_kernel(X_test, X_test)
+        variance = tf.linalg.diag_part(K_star_star) - tf.reduce_sum(tf.square(v), axis=0)
+        std_dev = tf.sqrt(tf.maximum(variance, 0.0))
+
+        return tf.squeeze(mean), tf.squeeze(std_dev)
+
