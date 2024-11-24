@@ -3,97 +3,117 @@ import numpy as np
 
 class DataCleaner:
     """
-    Cleans raw data fetched from the data_acquisition module.
+    Cleans raw data, trims values by percentiles, and computes weighted averages
+    for observations with the same key column (e.g., YTE), while excluding single data points.
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, key_column="YTE", value_column="calc", weight_column="volume"):
+        """
+        Initializes the DataCleaner with customizable column names.
+
+        Parameters:
+        ----------
+        key_column : str
+            The column name for the key grouping (e.g., YTE).
+        value_column : str
+            The column name for the values to trim and average (e.g., calc).
+        weight_column : str
+            The column name for the weights used in averaging (e.g., volume).
+        """
+        self.key_column = key_column
+        self.value_column = value_column
+        self.weight_column = weight_column
 
     def clean_data(self, data: pd.DataFrame) -> pd.DataFrame:
         """
-        Cleans the input DataFrame and returns a processed DataFrame.
+        Cleans the input DataFrame by trimming and applying weighted aggregation.
 
         Parameters:
         ----------
         data : pd.DataFrame
-            Raw data to clean.
+            The raw input data to clean.
 
         Returns:
         -------
         pd.DataFrame
-            Cleaned data.
+            A cleaned DataFrame with unique key_column values and their weighted averages.
         """
-        # Step 1: Remove duplicates
-        data = data.drop_duplicates()
+        # Step 1: Remove groups with a single data point
+        data = self._remove_single_data_points(data)
 
-        # Step 2: Handle missing values
-        missing_threshold = 0.2  # Drop columns with >20% missing values
-        data = data.loc[:, data.isnull().mean() < missing_threshold]  # Drop columns
-        data = data.fillna(method='ffill').fillna(method='bfill')  # Fill remaining missing values
+        # Step 2: Trim data by percentiles (25th and 75th)
+        data = self._trim_by_percentiles(data)
 
-        # Step 3: Ensure correct data types
-        for column in data.select_dtypes(include=['object']).columns:
-            if column.lower().endswith("date"):
-                data[column] = pd.to_datetime(data[column], errors='coerce')
-            else:
-                try:
-                    data[column] = pd.to_numeric(data[column], errors='coerce')
-                except Exception:
-                    pass
+        # Step 3: Compute weighted average for each unique key_column
+        cleaned_data = self._compute_weighted_average(data)
 
-        # Step 4: Filter outliers
-        for column in data.select_dtypes(include=[np.number]).columns:
-            data = self.filter_outliers(data, column)
+        return cleaned_data
 
-        # Step 5: Normalize column names
-        data.columns = data.columns.str.strip().str.lower().str.replace(' ', '_')
-
-        return data
-
-    def filter_outliers(self, data: pd.DataFrame, column: str) -> pd.DataFrame:
+    def _remove_single_data_points(self, data: pd.DataFrame) -> pd.DataFrame:
         """
-        Removes extreme outliers from a numeric column using the IQR method.
+        Removes rows belonging to groups in key_column with only a single data point.
 
         Parameters:
         ----------
         data : pd.DataFrame
-            The DataFrame containing the column to filter.
-        column : str
-            The name of the column to process.
+            The input DataFrame.
 
         Returns:
         -------
         pd.DataFrame
-            DataFrame with outliers removed.
+            A DataFrame excluding groups with a single data point.
         """
-        Q1 = data[column].quantile(0.25)
-        Q3 = data[column].quantile(0.75)
-        IQR = Q3 - Q1
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
+        # Filter out groups with only one data point
+        group_sizes = data.groupby(self.key_column).size()
+        valid_keys = group_sizes[group_sizes > 1].index
+        return data[data[self.key_column].isin(valid_keys)]
 
-        return data[(data[column] >= lower_bound) & (data[column] <= upper_bound)]
-
-    def validate_computed_columns(self, data: pd.DataFrame) -> pd.DataFrame:
+    def _trim_by_percentiles(self, data: pd.DataFrame) -> pd.DataFrame:
         """
-        Validates the correctness of pre-computed columns, such as bid-ask spreads.
+        Trims the value_column by removing rows outside the 25th-75th percentile range.
 
         Parameters:
         ----------
         data : pd.DataFrame
-            The cleaned data with pre-computed columns.
+            The input DataFrame.
 
         Returns:
         -------
         pd.DataFrame
-            Data with validated columns.
+            A trimmed DataFrame.
         """
-        if 'c_bidaskspread' in data.columns and 'c_bid' in data.columns and 'c_ask' in data.columns:
-            data['c_bidaskspread_check'] = data['c_ask'] - data['c_bid']
-            data['c_bidaskspread_valid'] = np.isclose(data['c_bidaskspread'], data['c_bidaskspread_check'])
-        
-        if 'p_bidaskspread' in data.columns and 'p_bid' in data.columns and 'p_ask' in data.columns:
-            data['p_bidaskspread_check'] = data['p_ask'] - data['p_bid']
-            data['p_bidaskspread_valid'] = np.isclose(data['p_bidaskspread'], data['p_bidaskspread_check'])
+        trimmed_data = []
+        for key, group in data.groupby(self.key_column):
+            # Compute percentiles
+            Q1 = group[self.value_column].quantile(0.25)
+            Q3 = group[self.value_column].quantile(0.75)
 
-        return data
+            # Filter rows within the percentile range
+            trimmed_group = group[(group[self.value_column] >= Q1) & (group[self.value_column] <= Q3)]
+            trimmed_data.append(trimmed_group)
+
+        return pd.concat(trimmed_data, ignore_index=True)
+
+    def _compute_weighted_average(self, data: pd.DataFrame) -> pd.DataFrame:
+        """
+        Computes the weighted average of value_column using weight_column for each unique key_column.
+
+        Parameters:
+        ----------
+        data : pd.DataFrame
+            The trimmed DataFrame.
+
+        Returns:
+        -------
+        pd.DataFrame
+            A DataFrame with unique key_column values and their weighted averages.
+        """
+        # Weighted average calculation
+        aggregated_data = data.groupby(self.key_column).apply(
+            lambda group: pd.Series({
+                self.value_column: np.average(group[self.value_column], weights=group[self.weight_column]),
+                self.weight_column: group[self.weight_column].sum()  # Optional: Keep total weight if needed
+            })
+        ).reset_index()
+
+        return aggregated_data
