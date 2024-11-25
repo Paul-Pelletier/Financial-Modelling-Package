@@ -1,0 +1,12 @@
+class ImpliedVolatilitySmileIndicators():
+    def __init__(self, data):
+        """
+        Initialize the Implied Volatility Smile Indicators.
+        : param implied_volatility_data : Option chain curated market data
+        : param call_implied_volatility : Call implied volatility market data
+        : param
+        """
+        self.implied_volatility_data = data
+        self.call_implied_volatility = data['C_IV']
+        self.put_implied_volatility = data['P_IV']
+        self.strikes = data['STRIKE']
