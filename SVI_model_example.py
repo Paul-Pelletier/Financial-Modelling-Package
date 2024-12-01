@@ -1,40 +1,56 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-# Import the SVI_model class (assuming it's saved in svi_model.py)
-# from svi_model import SVI_model
-
 from modelling.SVI_model import SVI_model
 
-# Market Data
-log_moneyness = np.array([-0.2, -0.1, 0.0, 0.1, 0.2])  # log(K/F)
-market_variances = np.array([0.06, 0.052, 0.05, 0.055, 0.06])  # Total implied variances (sigma^2 * T)
+# Assuming SVI_model is already defined and imported
+# from svi_model import SVI_model
 
-# Initialize the SVI model
+# Generate realistic synthetic market data
+def generate_market_data():
+    # Log-moneyness values
+    log_moneyness = np.linspace(-0.4, 0.4, 20)  # 20 points from deep ITM to deep OTM
+    
+    # True volatility smile
+    def true_volatility(log_m):
+        atm_vol = 0.2  # ATM implied volatility (20%)
+        skew = -0.1    # Skewness
+        curvature = 0.4  # Smile curvature
+        return atm_vol + skew * log_m + curvature * log_m**2
+
+    # Generate market volatilities with noise
+    np.random.seed(42)  # For reproducibility
+    market_vols = true_volatility(log_moneyness) + np.random.normal(0, 0.005, size=log_moneyness.shape)
+
+    # Convert to total implied variances
+    maturity = 1.0  # Time to maturity (1 year)
+    market_variances = market_vols**2 * maturity
+
+    return log_moneyness, market_variances, market_vols
+
+# Generate synthetic market data
+log_moneyness, market_variances, market_vols = generate_market_data()
+
+# Initialize and calibrate the SVI model
 svi = SVI_model()
-
-# Step 1: Calibrate the Model
-print("Calibrating the SVI model...")
 svi.fit(log_moneyness, market_variances)
-print("Calibrated Parameters:", svi.params)
 
-# Step 2: Predict Variances
+# Predict implied variances using the calibrated model
 predicted_variances = svi.predict(log_moneyness)
-print("Predicted Variances:", predicted_variances)
 
-# Step 3: Predict Implied Volatilities
-maturity = 1.0  # Time to maturity in years
-new_moneyness = np.linspace(-0.2,0.2,100)
-implied_vols = svi.implied_volatility(new_moneyness, maturity)
-print("Implied Volatilities:", implied_vols)
+# Convert to implied volatilities
+maturity = 1.0  # Time to maturity (1 year)
+predicted_vols = np.sqrt(predicted_variances / maturity)
 
-# Step 4: Plot Market vs. Model
-plt.figure(figsize=(8, 6))
-plt.plot(log_moneyness, np.sqrt(market_variances / maturity), 'o', label="Market Implied Volatility", markersize=8)
-plt.plot(new_moneyness, implied_vols, '-', label="SVI Model Fit", linewidth=2)
+# Plot market data vs. SVI fit
+plt.figure(figsize=(10, 6))
+plt.plot(log_moneyness, market_vols, 'o', label="Market Implied Volatility", markersize=8)
+plt.plot(log_moneyness, predicted_vols, '-', label="SVI Model Fit", linewidth=2)
 plt.xlabel("Log-Moneyness (log(K/F))")
 plt.ylabel("Implied Volatility")
 plt.title("SVI Calibration: Market vs Model")
 plt.legend()
 plt.grid()
 plt.show()
+
+# Print the calibrated parameters
+print("Calibrated Parameters:", svi.params)
