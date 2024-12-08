@@ -7,7 +7,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress INFO and WARNING logs
 
 # Generate synthetic dataset
 x_train = tf.random.normal([100000, 1])  # Simplified to 1 feature for easy visualization
-y_train = 3 * x_train**2 + tf.random.normal([100000, 1])  # y = x^3 + 3x^2 + noise
+y_train = 10 * x_train**3 + 3 * x_train**2 + tf.random.normal([100000, 1])  # y = x^3 + 3x^2 + noise
 
 # Define a simple model
 model = tf.keras.Sequential([
