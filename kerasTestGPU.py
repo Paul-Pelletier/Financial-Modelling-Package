@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress INFO and WARNING logs
 
 # Generate synthetic dataset
-x_train = tf.random.normal([1000, 1])  # Simplified to 1 feature for easy visualization
-y_train = 3 * x_train**2 + tf.random.normal([1000, 1])  # y = x^3 + 3x^2 + noise
+x_train = tf.random.normal([100000, 1])  # Simplified to 1 feature for easy visualization
+y_train = 3 * x_train**2 + tf.random.normal([100000, 1])  # y = x^3 + 3x^2 + noise
 
 # Define a simple model
 model = tf.keras.Sequential([
@@ -26,7 +26,7 @@ batch_size = 200
 dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train)).batch(batch_size)
 
 # Train the model using a custom training loop
-epochs = 50
+epochs = 5
 print("Starting training...")
 start_time = time.time()
 
