@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import sys
+print("Python executable folder:", sys.executable)
+
 
 # Define the double exponential model
 def double_exponential_model(x, a, b, d, e, c):
