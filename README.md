@@ -1,3 +1,6 @@
+As of 14/12/2024 the aim will be to correctly fit smiles based on the LogMoneyness
+
+
 # Financial Modelling Package
 
 This repository contains implementations of various financial models for data analysis, forecasting, and options pricing.
