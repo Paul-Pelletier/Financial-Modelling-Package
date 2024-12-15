@@ -5,6 +5,20 @@ import matplotlib.pyplot as plt
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress INFO and WARNING logs
 
+
+import sys
+
+# Get the Python version
+python_version = sys.version
+
+# Print the version
+print(f"Python version: {python_version}")
+
+# Alternatively, you can get a tuple of the major, minor, and micro versions
+python_version_tuple = sys.version_info
+print(f"Python version tuple: {python_version_tuple.major}.{python_version_tuple.minor}.{python_version_tuple.micro}")
+
+
 # Generate synthetic dataset
 x_train = tf.random.normal([100000, 1])  # Simplified to 1 feature for easy visualization
 y_train = 10 * x_train**3 + 3 * x_train**2 + tf.random.normal([100000, 1])  # y = x^3 + 3x^2 + noise
