@@ -2,6 +2,10 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
+
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from modelling.SABR_model import SABRModelGPU  # Save the class above as SABR_model_gpu.py
 
 # Example data
