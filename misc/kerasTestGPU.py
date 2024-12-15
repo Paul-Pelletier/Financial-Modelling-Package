@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Suppress INFO and WARNING logs
 
-
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+print("TensorFlow is using GPU:", tf.test.is_built_with_cuda())
+#tf.debugging.set_log_device_placement(True)  # Logs operations on devices
 import sys
 
 # Get the Python version
