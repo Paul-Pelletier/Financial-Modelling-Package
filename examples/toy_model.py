@@ -3,6 +3,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 import sys
+import os
 print("Python executable folder:", sys.executable)
 
 
@@ -14,8 +15,15 @@ def double_exponential_model(x, a, b, d, e, c):
 def single_exponential_model(x, a, b, c):
     return a * np.exp(b * x) + c
 
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Define the path to the CSV file in the same folder
+csv_path = os.path.join(script_dir, "cleaned_data.csv")
+
+
 # Load the cleaned data
-data = pd.read_csv("cleaned_data.csv", sep=";")
+data = pd.read_csv(csv_path, sep=";")
 
 # Extract the independent and dependent variables
 x = data["YTE"].values

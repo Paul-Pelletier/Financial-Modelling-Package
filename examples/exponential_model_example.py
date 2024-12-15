@@ -1,8 +1,18 @@
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 import pandas as pd
 from modelling.Exponential_model import ExponentialModel
 
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Define the path to the CSV file in the same folder
+csv_path = os.path.join(script_dir, "cleaned_data.csv")
+
 # Load the cleaned data
-data = pd.read_csv("cleaned_data.csv", sep=";")
+data = pd.read_csv(csv_path, sep=";")
 
 # Extract the independent and dependent variables
 x = data["YTE"].values

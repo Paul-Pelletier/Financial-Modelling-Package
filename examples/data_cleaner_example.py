@@ -1,9 +1,17 @@
+import os
+import sys
 import pandas as pd
 import matplotlib.pyplot as plt
+
+#Allows for importing neighbouring packages
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_cleaning.data_cleaning import DataCleaner
+from utils.utils import replace_commas
 
 # Sample dataset
-data = pd.read_csv("raw_data.csv", sep=";")
+converters = {"C_IV": replace_commas, "P_IV": replace_commas}
+
+data = pd.read_csv("raw_data.csv", sep=";", converters = converters)
 
 # Initialize the cleaner with custom column names (if needed)
 cleaner = DataCleaner(key_column="YTE", value_column="calc", weight_column="volume")
@@ -46,6 +54,7 @@ def plot_raw_vs_cleaned(raw_data, cleaned_data, x_column, y_column):
     plt.legend()
     plt.grid()
     plt.show()
+
 
 # Call the plot function
 plot_raw_vs_cleaned(data, cleaned_data, "YTE", "calc")

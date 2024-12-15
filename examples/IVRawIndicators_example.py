@@ -1,8 +1,19 @@
+import os
+import sys
+#Allows for importing neighbouring packages
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from indicators.IVRawIndicators import ImpliedVolatilitySmileIndicators
 import pandas as pd
 import matplotlib.pyplot as plt
 
-data = pd.read_csv('raw_IV_data.csv', sep = ";")
+# Get the directory of the current script
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Define the path to the CSV file in the same folder
+csv_path = os.path.join(script_dir, "raw_IV_data.csv")
+
+data = pd.read_csv(csv_path, sep = ";")
 print(data.columns)
 first_smile = data[data["YTE"] == pd.unique(data["YTE"])[0]][["Moneyness", "C_IV", "P_IV"]]
 print(first_smile)
