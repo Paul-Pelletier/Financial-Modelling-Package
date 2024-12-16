@@ -1,9 +1,5 @@
 import os
-import sys
-#Allows for importing neighbouring packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from indicators.IVRawIndicators import ImpliedVolatilitySmileIndicators
+from financial_modelling.indicators.IVRawIndicators import ImpliedVolatilitySmileIndicators
 import pandas as pd
 import matplotlib.pyplot as plt
 

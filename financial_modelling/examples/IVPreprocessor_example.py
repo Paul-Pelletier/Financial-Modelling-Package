@@ -1,10 +1,5 @@
 import pandas as pd
-import os
-import sys
-#Allows for importing neighbouring packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from data_pre_processing.IVPreprocessor import IVPreprocessor
+from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
 # Example DataFrame
 data = pd.DataFrame({

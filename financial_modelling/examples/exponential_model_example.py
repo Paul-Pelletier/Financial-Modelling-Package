@@ -1,9 +1,6 @@
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
 import pandas as pd
-from modelling.Exponential_model import ExponentialModel
+import os
+from financial_modelling.modelling.Exponential_model import ExponentialModel
 
 # Get the directory of the current script
 script_dir = os.path.dirname(os.path.abspath(__file__))

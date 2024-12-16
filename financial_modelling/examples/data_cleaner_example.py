@@ -1,12 +1,7 @@
-import os
-import sys
 import pandas as pd
 import matplotlib.pyplot as plt
-
-#Allows for importing neighbouring packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_cleaning.data_cleaning import DataCleaner
-from utils.utils import replace_commas
+from financial_modelling.data_cleaning.data_cleaning import DataCleaner
+from financial_modelling.utils.utils import replace_commas
 
 # Sample dataset
 converters = {"C_IV": replace_commas, "P_IV": replace_commas}

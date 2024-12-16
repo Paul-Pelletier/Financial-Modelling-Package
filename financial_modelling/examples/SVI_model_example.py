@@ -1,12 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-import os
-import sys
-#Allows for importing neighbouring packages
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-from modelling.SVI_model_old import SVI_model
+from financial_modelling.modelling.SVI_model_old import SVI_model
 
 # Assuming SVI_model is already defined and imported
 # from svi_model import SVI_model

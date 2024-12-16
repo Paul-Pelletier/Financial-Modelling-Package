@@ -1,7 +1,4 @@
-import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_acquisition.database_fetcher import DatabaseFetcher
+from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 import time
 
 DB_CONFIG = {
