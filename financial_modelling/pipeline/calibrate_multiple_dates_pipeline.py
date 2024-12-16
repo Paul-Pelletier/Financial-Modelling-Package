@@ -1,7 +1,3 @@
-import os
-import sys
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-#print(sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))))
 from financial_modelling.utils.utils import get_file_names
 #from financial_modelpipeline.svi_parameters_pipeline import SVICalibrationDataPipeline
 #from pipeline.export_distinct_unixtimequotedate_pipeline import FetchAndSplitToMultipleQuoteDates

@@ -1,11 +1,8 @@
-import os
-import sys
 import pandas as pd
 import numpy as np
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from utils.utils import check_distinct_quotetime_file_presence
-from pipeline.export_distinct_unixtimequotedate_pipeline import UniqueQuoteTimeFetcher
+import os
+from financial_modelling.utils.utils import check_distinct_quotetime_file_presence
+from financial_modelling.pipeline.export_distinct_unixtimequotedate_pipeline import UniqueQuoteTimeFetcher
 
 class FetchAndSplitToMultipleQuoteDates:
     def __init__(self, number_of_splits = 10):

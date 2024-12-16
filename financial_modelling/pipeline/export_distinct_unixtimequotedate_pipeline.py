@@ -1,15 +1,11 @@
+from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 import os
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_acquisition.database_fetcher import DatabaseFetcher
-import time
 
 class UniqueQuoteTimeFetcher:
     def __init__(self, output_path = "E://OutputParamsFiles//", file_name = "outputDistinctQuotesTimes.csv"):
         self.output_path = output_path
         self.file_name = file_name
         self.output_file = os.path.join(output_path, "outputDistinctQuotesTimes.csv")
-        pass
 
     def Get_Unique_QuoteTime_File(self):
         DB_CONFIG = {

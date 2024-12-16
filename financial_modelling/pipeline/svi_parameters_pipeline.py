@@ -8,11 +8,9 @@ import pytz
 import logging
 import matplotlib.pyplot as plt
 
-#Adds the absolute path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_pre_processing.IVPreprocessor import IVPreprocessor
-from data_acquisition.database_fetcher import DatabaseFetcher
-from modelling.SVIModel import SVIModel
+from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
+from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+from financial_modelling.modelling.SVIModel import SVIModel
 
 
 class SVICalibrationDataPipeline:
