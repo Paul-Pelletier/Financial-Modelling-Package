@@ -1,9 +1,0 @@
-data_acquisition
-data_cleaning
-data_pre_processing
-indicators
-modelling
-pipeline
-tests
-utils
-visualization
