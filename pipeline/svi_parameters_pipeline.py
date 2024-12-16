@@ -15,8 +15,8 @@ from data_acquisition.database_fetcher import DatabaseFetcher
 from modelling.SVIModel import SVIModel
 
 
-class DataPipeline:
-    def __init__(self, date = "1546439410"):
+class SVICalibrationDataPipeline:
+    def __init__(self, date = "1546439410", output_folder = "E:\OutputParamsFiles\OutputFiles"):
         """
         Initialize the pipeline.
 
@@ -45,6 +45,7 @@ class DataPipeline:
         self.train_data = None
         self.volume_weights = None
         self.model_params = None
+        self.output_folder = output_folder
 
     def fetch_data(self):
         """
@@ -186,7 +187,7 @@ class DataPipeline:
         plt.show()
 
 
-    def run(self, date = ["1546439410"]):
+    def run(self):
         """
         Run the entire pipeline.
 
@@ -195,7 +196,7 @@ class DataPipeline:
         Returns:
         - csv file : List of params for each (date, expiry)
         """
-        output_dataframe = pd.DataFrame(["QUOTE_UNIXTIME", "EXPIRE_UNIX", "a", "b", "rho", "m", "sigma"])
+        output_dataframe = pd.DataFrame(columns = ["QUOTE_UNIXTIME", "EXPIRE_UNIX", "a", "b", "rho", "m", "sigma"])
 
         # Fetch data
         fetched_data = self.fetch_data()
@@ -226,17 +227,18 @@ class DataPipeline:
                                           pd.DataFrame([new_row])], 
                                           ignore_index=True
                                           )
-        self.plot_fitted_models(results, "a")
+        self.plot_fitted_models(results)
         
+        output_folder = 
         # Save to CSV
-        output_dataframe.to_csv(f"output {date}.csv", index=False)
+        output_dataframe.to_csv(f"output {self.date}.csv", index=False)
 
 
-if __name__ == "__main__":
-    # Configure logging
-    logging.basicConfig(level=logging.INFO,  # Adjust level (e.g., DEBUG for detailed logs, INFO for less verbosity)
-                        format="%(asctime)s - %(levelname)s - %(message)s"
-                        )
-    # Run the pipeline
-    pipeline = DataPipeline()
-    pipeline.run()
+#if __name__ == "__main__":
+#    # Configure logging
+#    logging.basicConfig(level=logging.INFO,  # Adjust level (e.g., DEBUG for detailed logs, INFO for less verbosity)
+#                        format="%(asctime)s - %(levelname)s - %(message)s"
+#                        )
+#    # Run the pipeline
+#    pipeline = SVICalibrationDataPipeline()
+#    pipeline.run()

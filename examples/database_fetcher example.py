@@ -4,7 +4,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_acquisition.database_fetcher import DatabaseFetcher
 import time
 
-
 DB_CONFIG = {
     'server': 'DESKTOP-DK79R4I',  # Your server name
     'database': 'DataMining',     # Your database name
