@@ -20,7 +20,7 @@ class SVI_model:
         SVI formula to calculate total implied variance for a given log-moneyness k.
         
         Parameters:
-        - k: Log-moneyness (log(K / F))
+        - k: Log-moneyness (log(K / Spot))
         - a, b, rho, m, sigma: SVI parameters
         
         Returns:
@@ -33,7 +33,7 @@ class SVI_model:
         Calibrate the SVI model to market data.
         
         Parameters:
-        - log_moneyness: array-like, log-moneyness values (log(K / F))
+        - log_moneyness: array-like, log-moneyness values (log(K / Spot))
         - market_variances: array-like, market total implied variances
         
         Updates:
@@ -70,7 +70,7 @@ class SVI_model:
         Predict total implied variance for given log-moneyness using calibrated parameters.
         
         Parameters:
-        - log_moneyness: array-like, log-moneyness values (log(K / F))
+        - log_moneyness: array-like, log-moneyness values (log(K / Spot))
         
         Returns:
         - Array of predicted total implied variances
@@ -83,7 +83,7 @@ class SVI_model:
         Calculate implied volatilities from total implied variances.
         
         Parameters:
-        - log_moneyness: array-like, log-moneyness values (log(K / F))
+        - log_moneyness: array-like, log-moneyness values (log(K / Spot))
         - maturity: float, time to maturity
         
         Returns:
