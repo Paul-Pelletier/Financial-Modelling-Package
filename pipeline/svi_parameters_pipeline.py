@@ -76,7 +76,7 @@ class DataPipeline:
             print("No data fetched.")
         return self.data
         
-    def process_data(self, data, expiry, call_limits = (0.90, 1.10), put_limits = (0.90, 1.10)):
+    def process_data(self, data, expiry, call_limits = (0.90, 1), put_limits = (1, 1.10)):
         """
         Process the fetched data.
         Args:
@@ -90,7 +90,7 @@ class DataPipeline:
         self.call_limits = call_limits
         self.put_limits = put_limits
         self.preprocessor = IVPreprocessor(expiry_specific_data)
-        self.preprocessed_data = self.preprocessor.preprocess(self.call_limits, self.put_limits)
+        self.preprocessed_data = self.preprocessor.preprocess(self.call_limits, self.put_limits, mode = "split")
 
         return self.preprocessed_data
 
@@ -226,7 +226,7 @@ class DataPipeline:
                                           pd.DataFrame([new_row])], 
                                           ignore_index=True
                                           )
-        self.plot_fitted_models(results)
+        self.plot_fitted_models(results, "a")
         
         # Save to CSV
         output_dataframe.to_csv(f"output {date}.csv", index=False)
