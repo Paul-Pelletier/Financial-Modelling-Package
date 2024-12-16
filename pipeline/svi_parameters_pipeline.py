@@ -113,7 +113,7 @@ class DataPipeline:
         self.model_params = model.get_params()
         return self.model_params
 
-    def plot_fitted_models(self, results):
+    def plot_fitted_models(self, results, plot = "off"):
         """
         Plots the fitted SVI models and training data in a single Matplotlib window.
 
@@ -124,6 +124,8 @@ class DataPipeline:
         Returns:
         - None: Displays the plots.
         """
+        if plot == "off":
+            return ""
         num_expiries = len(results)
         cols = 12  # Number of columns in the subplot grid
         rows = (num_expiries + cols - 1) // cols  # Calculate rows dynamically
