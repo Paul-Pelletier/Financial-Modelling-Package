@@ -163,7 +163,7 @@ class DataPipeline:
                 return a + b * (rho * (k - m) + np.sqrt((k - m) ** 2 + sigma ** 2))
 
             # Generate SVI curve for the fitted model
-            log_moneyness_range = np.linspace(log_moneyness.min() - 0.1, log_moneyness.max() + 0.1, 500)
+            log_moneyness_range = np.linspace(log_moneyness.min() - 0.2, log_moneyness.max() + 0.2, 500)
             implied_variance = svi_formula(log_moneyness_range, a, b, rho, m, sigma)
             fitted_volatility = np.sqrt(np.maximum(implied_variance, 1e-8))  # Avoid negative values
 
@@ -171,18 +171,18 @@ class DataPipeline:
             ax = axes[i]
             ax.scatter(log_moneyness, implied_volatility, color="blue", label="Training Data", alpha=0.7)
             ax.plot(log_moneyness_range, fitted_volatility, color="red", label="Fitted SVI Model", linewidth=2)
-            ax.set_title(f"Expiry: {expiry}", fontsize=14)
-            ax.set_xlabel("Log-Moneyness (log(K / Spot))", fontsize=12)
-            ax.set_ylabel("Implied Volatility", fontsize=12)
-            ax.legend(fontsize=10)
-            ax.grid(alpha=0.3)
+            #ax.set_title(f"Expiry: {expiry}", fontsize=14)
+            #ax.set_xlabel("Log-Moneyness (log(K / Spot))", fontsize=12)
+            #ax.set_ylabel("Implied Volatility", fontsize=12)
+            #ax.legend(fontsize=10)
+            #ax.grid(alpha=0.3)
 
         # Hide unused subplots (if any)
         for j in range(len(results), len(axes)):
             axes[j].axis("off")
 
         # Adjust layout and show the figure
-        plt.tight_layout()
+        #plt.tight_layout()
         plt.show()
 
 
