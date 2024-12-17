@@ -7,11 +7,9 @@ from datetime import datetime
 import pytz
 import logging
 import matplotlib.pyplot as plt
-
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.modelling.SVIModel import SVIModel
-
 
 class SVICalibrationDataPipeline:
     def __init__(self, date = "1546439410", output_folder = "E:\OutputParamsFiles\OutputFiles"):
@@ -185,7 +183,7 @@ class SVICalibrationDataPipeline:
         plt.show()
 
 
-    def run(self):
+    def run(self, output_folder):
         """
         Run the entire pipeline.
 
@@ -227,9 +225,11 @@ class SVICalibrationDataPipeline:
                                           )
         self.plot_fitted_models(results)
         
-        output_folder = 
+        # Get the right output folder
+        output_folder = output_folder
+        output_file = os.path.join(output_folder, f"output {self.date}.csv")
         # Save to CSV
-        output_dataframe.to_csv(f"output {self.date}.csv", index=False)
+        output_dataframe.to_csv(output_file, index=False)
 
 
 #if __name__ == "__main__":
