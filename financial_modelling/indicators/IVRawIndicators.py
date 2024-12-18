@@ -1,4 +1,5 @@
 from scipy.stats import skew, kurtosis
+import numpy as np
 
 class ImpliedVolatilitySmileIndicators(AbstractIndicators):
     """
