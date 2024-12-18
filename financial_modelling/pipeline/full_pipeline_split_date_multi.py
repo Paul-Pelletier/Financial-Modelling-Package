@@ -1,10 +1,11 @@
-from financial_modelling.pipeline.svi_parameters_pipeline import SVICalibrationDataPipeline
+from financial_modelling.pipeline.svi_parameters_pipeline import SVICalibrationPipeline
 from financial_modelling.pipeline.fetch_and_split_to_multiple_quote_dates_pipeline import FetchAndSplitToMultipleQuoteDates
 from financial_modelling.utils.utils import get_file_names
 import pandas as pd
 import os
 from concurrent.futures import ProcessPoolExecutor
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
 # Splits the big unique file
 fetcher_and_splitter = FetchAndSplitToMultipleQuoteDates(DatabaseFetcher)
@@ -20,7 +21,7 @@ output_folder = "E://OutputParamsFiles//OutputFiles"
 # Function to process a single date
 def process_date(date, output_folder):
     # Instantiate and run the pipeline
-    SVICalibrationDataPipeline(DatabaseFetcher, date=str(date)).run(output_folder)
+    SVICalibrationPipeline(data_fetcher = DatabaseFetcher, preprocessor = IVPreprocessor, date=str(date)).run(output_folder)
 
 # Main function
 def main(source_folder_path, files_list, output_folder):
