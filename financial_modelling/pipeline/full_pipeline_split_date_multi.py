@@ -16,8 +16,6 @@ files_list = get_file_names(source_folder_path)
 
 # Where the files will be dumped
 output_folder = "E://OutputParamsFiles//OutputFiles"
-output_folder = "D://"
-
 
 # Function to process a single date
 def process_date(date, output_folder):
