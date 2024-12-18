@@ -2,8 +2,10 @@ import pandas as pd
 import pyodbc
 from sqlalchemy import create_engine
 import time
+import logging
+from .base_fetcher import DataFetcher
 
-class DatabaseFetcher:
+class DatabaseFetcher(DataFetcher):
     """
     Fetches data from an SQL database.
     
@@ -23,6 +25,8 @@ class DatabaseFetcher:
         use_sqlalchemy : bool, optional
             If True, uses sqlalchemy for the connection. Otherwise, uses pyodbc.
         """
+        logging.basicConfig(level=logging.INFO)
+        logging.info(f"DatabaseFetcher initialized with {connection_string}")
         self.connection_string = connection_string
         self.use_sqlalchemy = use_sqlalchemy
         self.connection_time = None  # Store connection time for performance tracking

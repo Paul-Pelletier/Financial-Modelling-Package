@@ -1,6 +1,6 @@
 import unittest
 import pandas as pd
-from data_acquisition.file_fetcher import FileFetcher
+from financial_modelling.data_acquisition.file_fetcher import FileFetcher
 
 class TestFileFetcher(unittest.TestCase):
     def test_fetch_csv(self):
