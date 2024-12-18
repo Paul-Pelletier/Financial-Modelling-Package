@@ -18,7 +18,18 @@ class PipelineBase(ABC):
         Process the fetched data. Must be implemented by subclasses.
         """
         pass
+    @abstractmethod
 
+    def fit_model(self, **kwargs):
+        """
+        Fits the model to a parametric model
+        """
+        pass
+    
+    def plot_fitted_model(self, **kwargs):
+        """
+        Plots the fitted model and the train data
+        """
     @abstractmethod
     def save_output(self, data, **kwargs):
         """
@@ -32,4 +43,5 @@ class PipelineBase(ABC):
         """
         data = self.fetch_data(**kwargs)
         processed_data = self.process_data(data, **kwargs)
+        self.fit_model(**kwargs)
         self.save_output(processed_data, **kwargs)
