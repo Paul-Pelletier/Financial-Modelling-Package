@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
+from financial_modelling.data_cleaning.base_cleaner import BaseCleaner
 
-class DataCleaner:
+class DataCleaner(BaseCleaner):
     """
     Cleans raw data, trims values by percentiles, and computes weighted averages
     for observations with the same key column (e.g., YTE), while excluding single data points.
