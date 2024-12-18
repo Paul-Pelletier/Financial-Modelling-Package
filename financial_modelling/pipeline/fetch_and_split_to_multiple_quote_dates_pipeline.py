@@ -19,9 +19,9 @@ class FetchAndSplitToMultipleQuoteDates:
     def check_file_presence_and_load(self):
         # File fetcher in case it's missing
         fetcher = UniqueQuoteTimeFetcher(self.data_fetcher)
+        
         # By default fetcher.output_path is E://OutputParamsFiles//
         self.folder_path = os.path.join(fetcher.output_path, "SplittedDistinct")
-        
         # Files presence check
         if not check_distinct_quotetime_file_presence:
             fetcher.Get_Unique_QuoteTime_File()
