@@ -7,12 +7,12 @@ from datetime import datetime
 import pytz
 import logging
 import matplotlib.pyplot as plt
-from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
+from financial_modelling.data_pre_processing.Preprocessor import Preprocessor
 from financial_modelling.data_acquisition.database_fetcher import DataFetcher
 from financial_modelling.modelling.SVIModel import SVIModel
 
 class SVICalibrationDataPipeline:
-    def __init__(self, data_fetcher: DataFetcher, date = "1546439410", output_folder = "E:\OutputParamsFiles\OutputFiles"):
+    def __init__(self, data_fetcher: DataFetcher, preprocessor = Preprocessor, date = "1546439410", output_folder = "E:\OutputParamsFiles\OutputFiles"):
         """
         Initialize the pipeline.
 
@@ -34,7 +34,7 @@ class SVICalibrationDataPipeline:
         
         self.fetcher = data_fetcher(self.connection_string, use_sqlalchemy=False)
         self.data = None
-        self.preprocessor = None
+        self.preprocessor_class = preprocessor
         self.preprocessed_data = None
         self.call_limits = None
         self.put_limits = None
@@ -86,8 +86,8 @@ class SVICalibrationDataPipeline:
         expiry_specific_data = data[data["EXPIRE_UNIX"]==expiry]
         self.call_limits = call_limits
         self.put_limits = put_limits
-        self.preprocessor = IVPreprocessor(expiry_specific_data)
-        self.preprocessed_data = self.preprocessor.preprocess(self.call_limits, self.put_limits, mode = "split")
+        self.preprocessor = self.preprocessor_class(expiry_specific_data)
+        self.preprocessed_data = self.preprocessor.preprocess(self.call_limits, self.put_limits, volume_limits = 1, mode = "split")
 
         return self.preprocessed_data
 
@@ -232,13 +232,14 @@ class SVICalibrationDataPipeline:
         output_dataframe.to_csv(output_file, index=False)
 
 
-# if __name__ == "__main__":
-#     # Configure logging
-#     logging.basicConfig(level=logging.INFO,  # Adjust level (e.g., DEBUG for detailed logs, INFO for less verbosity)
-#                         format="%(asctime)s - %(levelname)s - %(message)s"
-#                         )
-#     # Run the pipeline
-#     from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(level=logging.INFO,  # Adjust level (e.g., DEBUG for detailed logs, INFO for less verbosity)
+                        format="%(asctime)s - %(levelname)s - %(message)s"
+                        )
+    # Run the pipeline
+    from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+    from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor 
 
-#     pipeline = SVICalibrationDataPipeline(DatabaseFetcher)
-#     pipeline.run("D://")
+    pipeline = SVICalibrationDataPipeline(DatabaseFetcher, IVPreprocessor)
+    pipeline.run("D://")
