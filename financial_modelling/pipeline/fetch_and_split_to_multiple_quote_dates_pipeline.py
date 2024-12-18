@@ -42,3 +42,28 @@ class FetchAndSplitToMultipleQuoteDates:
     def run(self):
         self.check_file_presence_and_load()
         self.split_calibrate_and_dump()
+
+
+import pandas as pd
+import numpy as np
+import os
+
+class FetchAndSplitPipeline(PipelineBase):
+    def __init__(self, fetcher, output_folder="E://OutputParamsFiles//SplittedDistinct", num_splits=10):
+        super().__init__(fetcher, output_folder)
+        self.num_splits = num_splits
+
+    def fetch_data(self, **kwargs):
+        # Load the unique quote times file
+        input_file = kwargs.get("input_file", os.path.join(self.output_folder, "outputDistinctQuotesTimes.csv"))
+        return pd.read_csv(input_file)
+
+    def process_data(self, data, **kwargs):
+        # Split the data into multiple parts
+        return np.array_split(data, self.num_splits)
+
+    def save_output(self, data, **kwargs):
+        for i, split in enumerate(data):
+            output_file = os.path.join(self.output_folder, f"split_{i}.csv")
+            split.to_csv(output_file, index=False)
+            print(f"Split saved to {output_file}")
