@@ -3,20 +3,22 @@ import numpy as np
 import os
 from financial_modelling.utils.utils import check_distinct_quotetime_file_presence
 from financial_modelling.pipeline.export_distinct_unixtimequotedate_pipeline import UniqueQuoteTimeFetcher
+from financial_modelling.data_acquisition.base_fetcher import DataFetcher
 
 class FetchAndSplitToMultipleQuoteDates:
     """
     Creates an arbitrary number of split from a csv file that contains a list of unique QUOTE_UNIXTIME
     """
-    def __init__(self, number_of_splits = 10):
+    def __init__(self, generic_fetcher: DataFetcher, number_of_splits = 10):
         self.uniqueQuoteDates = None
         self.folder_path = None
         self.splitted_dataframes = None
         self.number_of_splits = number_of_splits
+        self.data_fetcher = generic_fetcher
 
     def check_file_presence_and_load(self):
         # File fetcher in case it's missing
-        fetcher = UniqueQuoteTimeFetcher()
+        fetcher = UniqueQuoteTimeFetcher(self.data_fetcher)
         # By default fetcher.output_path is E://OutputParamsFiles//
         self.folder_path = os.path.join(fetcher.output_path, "SplittedDistinct")
         

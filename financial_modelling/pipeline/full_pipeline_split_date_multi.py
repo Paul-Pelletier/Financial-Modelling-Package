@@ -4,9 +4,10 @@ from financial_modelling.utils.utils import get_file_names
 import pandas as pd
 import os
 from concurrent.futures import ProcessPoolExecutor
+from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 
 # Splits the big unique file
-fetcher_and_splitter = FetchAndSplitToMultipleQuoteDates()
+fetcher_and_splitter = FetchAndSplitToMultipleQuoteDates(DatabaseFetcher)
 fetcher_and_splitter.run()
 
 # Get where the files are created
@@ -15,11 +16,13 @@ files_list = get_file_names(source_folder_path)
 
 # Where the files will be dumped
 output_folder = "E://OutputParamsFiles//OutputFiles"
+output_folder = "D://"
+
 
 # Function to process a single date
 def process_date(date, output_folder):
     # Instantiate and run the pipeline
-    SVICalibrationDataPipeline(date=str(date)).run(output_folder)
+    SVICalibrationDataPipeline(DatabaseFetcher, date=str(date)).run(output_folder)
 
 # Main function
 def main(source_folder_path, files_list, output_folder):

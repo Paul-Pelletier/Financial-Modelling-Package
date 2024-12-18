@@ -3,7 +3,7 @@ import pyodbc
 from sqlalchemy import create_engine
 import time
 import logging
-from .base_fetcher import DataFetcher
+from financial_modelling.data_acquisition.base_fetcher import DataFetcher
 
 class DatabaseFetcher(DataFetcher):
     """

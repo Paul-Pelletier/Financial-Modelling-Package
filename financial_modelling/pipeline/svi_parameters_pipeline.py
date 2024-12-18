@@ -8,11 +8,11 @@ import pytz
 import logging
 import matplotlib.pyplot as plt
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
-from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+from financial_modelling.data_acquisition.database_fetcher import DataFetcher
 from financial_modelling.modelling.SVIModel import SVIModel
 
 class SVICalibrationDataPipeline:
-    def __init__(self, date = "1546439410", output_folder = "E:\OutputParamsFiles\OutputFiles"):
+    def __init__(self, data_fetcher: DataFetcher, date = "1546439410", output_folder = "E:\OutputParamsFiles\OutputFiles"):
         """
         Initialize the pipeline.
 
@@ -32,7 +32,7 @@ class SVICalibrationDataPipeline:
             f"Trusted_Connection=yes;"
             )
         
-        self.fetcher = DatabaseFetcher(self.connection_string, use_sqlalchemy=False)
+        self.fetcher = data_fetcher(self.connection_string, use_sqlalchemy=False)
         self.data = None
         self.preprocessor = None
         self.preprocessed_data = None
@@ -232,11 +232,13 @@ class SVICalibrationDataPipeline:
         output_dataframe.to_csv(output_file, index=False)
 
 
-#if __name__ == "__main__":
-#    # Configure logging
-#    logging.basicConfig(level=logging.INFO,  # Adjust level (e.g., DEBUG for detailed logs, INFO for less verbosity)
-#                        format="%(asctime)s - %(levelname)s - %(message)s"
-#                        )
-#    # Run the pipeline
-#    pipeline = SVICalibrationDataPipeline()
-#    pipeline.run()
+# if __name__ == "__main__":
+#     # Configure logging
+#     logging.basicConfig(level=logging.INFO,  # Adjust level (e.g., DEBUG for detailed logs, INFO for less verbosity)
+#                         format="%(asctime)s - %(levelname)s - %(message)s"
+#                         )
+#     # Run the pipeline
+#     from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+
+#     pipeline = SVICalibrationDataPipeline(DatabaseFetcher)
+#     pipeline.run("D://")
