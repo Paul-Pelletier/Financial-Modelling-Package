@@ -1,6 +1,7 @@
 import numpy as np
+from financial_modelling.data_pre_processing.Preprocessor import Preprocessor
 
-class IVPreprocessor(GenericPreprocessor):
+class IVPreprocessor(Preprocessor):
     def __init__(self, data, spot_col='UNDERLYING_LAST', strike_col='STRIKE',
                  call_iv_col='C_IV', put_iv_col='P_IV', call_vol_col='C_VOLUME', put_vol_col='P_VOLUME'):
         """

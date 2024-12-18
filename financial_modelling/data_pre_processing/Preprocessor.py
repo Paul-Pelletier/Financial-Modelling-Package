@@ -1,6 +1,6 @@
 import pandas as pd
 
-class GenericPreprocessor:
+class Preprocessor:
     def __init__(self, data):
         """
         Initialize the GenericPreprocessor with the input DataFrame.
