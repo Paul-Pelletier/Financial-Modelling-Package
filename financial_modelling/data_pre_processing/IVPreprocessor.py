@@ -39,10 +39,11 @@ class IVPreprocessor(Preprocessor):
         - pd.DataFrame: A DataFrame containing Log Moneyness, implied volatilities, and volumes.
         """
         self.validate_data([self.spot_col, self.strike_col, self.call_iv_col, self.put_iv_col,
-                            self.call_vol_col, self.put_vol_col])
+                            self.call_vol_col, self.put_vol_col, 'QUOTE_UNIXTIME', 'EXPIRE_UNIX'])
 
         # Calculate Strike/Spot ratio
         self.data['Strike/Spot'] = self.data[self.strike_col] / self.data[self.spot_col]
+        self.data['Residual_Maturity'] = (self.data['EXPIRE_UNIX'].astype(float) - self.data['QUOTE_UNIXTIME'].astype(float))/31_536_000 
 
         if mode == "overlap":
             # Select calls and puts based on the overlapping limits
@@ -52,12 +53,12 @@ class IVPreprocessor(Preprocessor):
             ]
 
             # Prepare call data
-            call_data = combined_data[[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col]]
+            call_data = combined_data[[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col, 'Residual_Maturity']]
             call_data = call_data.rename(columns={self.call_iv_col: "Implied_Volatility", self.call_vol_col: "Volume"})
             call_data['Option Type'] = 'Call'
 
             # Prepare put data
-            put_data = combined_data[[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col]]
+            put_data = combined_data[[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col, 'Residual_Maturity']]
             put_data = put_data.rename(columns={self.put_iv_col: "Implied_Volatility", self.put_vol_col: "Volume"})
             put_data['Option Type'] = 'Put'
 
@@ -68,7 +69,7 @@ class IVPreprocessor(Preprocessor):
             # Select calls based on the limits
             call_data = self.data[
                 (self.data['Strike/Spot'] >= call_limits[0]) & (self.data['Strike/Spot'] <= call_limits[1])
-            ][[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col]]
+            ][[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col, 'Residual_Maturity']]
 
             call_data = call_data.rename(columns={self.call_iv_col: 'Implied_Volatility', self.call_vol_col: 'Volume'})
             call_data['Option Type'] = 'Call'
@@ -76,7 +77,7 @@ class IVPreprocessor(Preprocessor):
             # Select puts based on the limits
             put_data = self.data[
                 (self.data['Strike/Spot'] >= put_limits[0]) & (self.data['Strike/Spot'] <= put_limits[1])
-            ][[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col]]
+            ][[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col, 'Residual_Maturity']]
 
             put_data = put_data.rename(columns={self.put_iv_col: 'Implied_Volatility', self.put_vol_col: 'Volume'})
             put_data['Option Type'] = 'Put'
@@ -89,9 +90,10 @@ class IVPreprocessor(Preprocessor):
 
         # Calculate Log Moneyness
         combined_data['Log_Moneyness'] = np.log(combined_data[self.strike_col] / combined_data[self.spot_col])
+        
 
         # Select final columns
-        final_data = combined_data[['Log_Moneyness', 'Implied_Volatility', 'Volume', 'Option Type']]
+        final_data = combined_data[['Log_Moneyness', 'Implied_Volatility', 'Volume', 'Option Type', 'Residual_Maturity']]
 
         # Drop rows where Implied Volatility is NaN or Volume < volume_limits
         final_data = final_data.dropna(subset=['Implied_Volatility'])
