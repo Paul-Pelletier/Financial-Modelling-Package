@@ -37,14 +37,22 @@ class SVIDifferentialEvolutionModel:
         total_variance = maturity * (implied_volatility ** 2)
 
         def objective(params):
-            """Objective function with constraints"""
+            """Objective function with constraints and regularization for parameter bounds"""
             a, b, rho, m, sigma = params
-            if not (0 < b and -1 <= rho <= 1 and sigma > 0):
-                return np.inf  # Invalid parameter regions
 
+            # Penalize invalid parameter regions
+            if not (0 < b and -1 <= rho <= 1 and sigma > 0):
+                return np.inf
+
+            # SVI model variance
             model_variance = self.svi(log_moneyness, a, b, rho, m, sigma)
             errors = (model_variance - total_variance) ** 2
-            return np.sum(errors)
+
+            # Penalize extreme values of 'a'
+            penalty_a = 100 * max(a - 0.05, 0) ** 2  # Penalize a > 0.05
+            penalty_a += 100 * max(0 - a, 0) ** 2    # Penalize a < 0
+
+            return np.sum(errors) + penalty_a
 
         # Define bounds
         try:
@@ -56,10 +64,10 @@ class SVIDifferentialEvolutionModel:
             k_min, k_max = -1, 1  # Fallback values
 
         bounds = [
-            (1e-6, 0.1),        # a: small positive values
+            (1e-6, 0.05),       # a: small positive values with tighter bounds
             (1e-6, 5.0),        # b: moderate positive values
             (-0.99, 0.99),      # rho: correlation between -1 and 1
-            (k_min - 0.5, k_max + 0.5),  # m: near log-moneyness range
+            (k_min - 0.5, k_max + 0.5),  # m: bounded near observed log-moneyness
             (1e-6, 1.0)         # sigma: small positive values
         ]
 
@@ -68,7 +76,15 @@ class SVIDifferentialEvolutionModel:
 
         # Optimize using differential evolution
         try:
-            result = differential_evolution(objective, bounds, strategy='best1bin', maxiter=500, tol=1e-6, seed=None)
+            result = differential_evolution(
+                objective,
+                bounds,
+                strategy='best1bin',
+                maxiter=1000,  # Increased iterations for better convergence
+                popsize=15,    # Increased population size for diversity
+                tol=1e-6,
+                seed=None
+            )
             if result.success:
                 self.params = result.x
                 if verbose:
@@ -80,7 +96,6 @@ class SVIDifferentialEvolutionModel:
         except Exception as e:
             print(f"Error during optimization: {e}. Using default parameters.")
             self.params = default_params
-
 
     def predict(self, log_moneyness, maturity):
         """
