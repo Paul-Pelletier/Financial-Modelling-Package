@@ -97,7 +97,6 @@ class IVPreprocessor(Preprocessor):
 
         # Drop rows where Implied Volatility is NaN or Volume < volume_limits
         final_data = final_data.dropna(subset=['Implied_Volatility'])
-        final_data['Implied_Volatility'] = final_data['Implied_Volatility'].str.replace(",", ".").astype(float)
         final_data = final_data[final_data['Implied_Volatility'] > 0.05]
         final_data['Volume'] = pd.to_numeric(final_data['Volume'], errors='coerce').fillna(0).astype(int)
         final_data = final_data[final_data['Volume'] >= volume_limits]
