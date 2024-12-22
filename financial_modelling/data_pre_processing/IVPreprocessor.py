@@ -43,7 +43,7 @@ class IVPreprocessor(Preprocessor):
 
         # Calculate Strike/Spot ratio
         self.data['Strike/Spot'] = self.data[self.strike_col] / self.data[self.spot_col]
-        self.data['Residual_Maturity'] = (self.data['EXPIRE_UNIX'].astype(float) - self.data['QUOTE_UNIXTIME'].astype(float))/31_536_000 
+        self.data['Residual_Maturity'] = (self.data['EXPIRE_UNIX'].astype(float) - self.data['QUOTE_UNIXTIME'].astype(float))/31_536_000
 
         if mode == "overlap":
             # Select calls and puts based on the overlapping limits
@@ -97,6 +97,7 @@ class IVPreprocessor(Preprocessor):
 
         # Drop rows where Implied Volatility is NaN or Volume < volume_limits
         final_data = final_data.dropna(subset=['Implied_Volatility'])
+        final_data = final_data[final_data['Implied_Volatility'].str.replace(",", ".").astype(float) > 0.05]
         final_data['Volume'] = pd.to_numeric(final_data['Volume'], errors='coerce').fillna(0).astype(int)
         final_data = final_data[final_data['Volume'] >= volume_limits]
 
