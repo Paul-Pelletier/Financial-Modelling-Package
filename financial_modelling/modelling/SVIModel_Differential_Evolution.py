@@ -81,7 +81,7 @@ class SVIDifferentialEvolutionModel:
                 bounds,
                 strategy='best1bin',
                 maxiter=1000,  # Increased iterations for better convergence
-                popsize=15,    # Increased population size for diversity
+                popsize=5,    # Increased population size for diversity
                 tol=1e-6,
                 seed=None
             )

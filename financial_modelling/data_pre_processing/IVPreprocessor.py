@@ -25,7 +25,7 @@ class IVPreprocessor(Preprocessor):
         self.call_vol_col = call_vol_col
         self.put_vol_col = put_vol_col
 
-    def preprocess(self, call_limits, put_limits, volume_limits=1, mode="overlap"):
+    def preprocess(self, call_limits = (0.9,1.10), put_limits = (0.9,1.10), volume_limits=1, mode="overlap"):
         """
         Preprocess the data to select calls and puts based on Strike/Spot limits, and concatenate or split the data.
 
