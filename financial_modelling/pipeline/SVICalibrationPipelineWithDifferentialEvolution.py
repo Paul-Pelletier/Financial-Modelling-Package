@@ -187,7 +187,7 @@ class SVICalibrationPipelineWithDE:
         output_data.to_csv(output_file, index=False)
         logging.info(f"Results saved to {output_file}")
 
-        #self.plot_fitted_models(results)
+        self.plot_fitted_models(results)
 
 
 if __name__ == "__main__":
