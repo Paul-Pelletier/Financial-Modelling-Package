@@ -38,6 +38,7 @@ class RegularizedSVICalibrationPipeline:
         self.data = None
         self.preprocessed_data = None
         self.model_params = None
+        self.model = None
 
     def fetch_data(self):
         """
@@ -97,7 +98,7 @@ class RegularizedSVICalibrationPipeline:
         - dict: Fitted model parameters for each residual maturity.
         """
         if model is None:
-            model = RegularizedSVIModel()
+            self.model = RegularizedSVIModel()
 
         train_data = {
             'log_moneyness': preprocessed_data["Log_Moneyness"].values,
@@ -114,9 +115,9 @@ class RegularizedSVICalibrationPipeline:
             train_data['total_variance'],
             train_data['residual_maturity'],
             lr=1e-2,
-            epochs=1000,
-            regularization_strength=1e-5,
-            lambda_decay = 1
+            epochs=200,
+            regularization_strength=1e-4,
+            lambda_decay = 0.5
         )
 
         # Store parameters using stringified maturities
@@ -130,7 +131,7 @@ class RegularizedSVICalibrationPipeline:
         return self.model_params
 
 
-    def plot_fitted_model(self, preprocessed_data, model):
+    def plot_fitted_model(self, preprocessed_data):
         """
         Plot the fitted SVI model across residual maturity.
 
@@ -172,7 +173,7 @@ class RegularizedSVICalibrationPipeline:
         plt.legend()
         plt.show()
 
-    def plot_individual_expiries(self, preprocessed_data, model):
+    def plot_individual_expiries(self, preprocessed_data):
         """
         Plot the fitted SVI models for individual expiries.
 
@@ -261,15 +262,35 @@ class RegularizedSVICalibrationPipeline:
         # Step 5: Save results
         if output_folder is None:
             output_folder = self.output_folder
+        os.makedirs(output_folder, exist_ok=True)
 
-        # Save the fitted parameters to a CSV file
+        # Build a DataFrame with one row per maturity
+        records = [
+            {
+                "Maturity": float(maturity_str),
+                "a": params["a"],
+                "b": params["b"],
+                "rho": params["rho"],
+                "m": params["m"],
+                "sigma": params["sigma"],
+            }
+            for maturity_str, params in fitted_params.items()
+        ]
+
+        # Convert to DataFrame
+        df_output = pd.DataFrame(records).sort_values("Maturity")
+
+        # Define the output file path
         output_file = os.path.join(output_folder, f"output_{self.date}.csv")
-        pd.DataFrame([fitted_params]).to_csv(output_file, index=False)
+
+        # Save the DataFrame to a CSV file
+        df_output.to_csv(output_file, index=False)
+
         logging.info(f"Results saved to {output_file}")
 
-        # Step 6: Visualize the results with plots
-        self.plot_fitted_model(preprocessed_data, model)
-        self.plot_individual_expiries(preprocessed_data, model)
+        # (Optional) Step 6: Visualize the results with plots
+        #self.plot_fitted_model(preprocessed_data)
+        #self.plot_individual_expiries(preprocessed_data)
 
 if __name__ == "__main__":
     # Configure logging
@@ -278,4 +299,4 @@ if __name__ == "__main__":
     from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
     pipeline = RegularizedSVICalibrationPipeline(DatabaseFetcher, IVPreprocessor)
-    pipeline.run("D://")
+    pipeline.run()
