@@ -10,8 +10,9 @@ import torch
 
 
 class OptimizedRegularizedSVICalibrationPipeline:
-    def __init__(self, data_fetcher, preprocessor, date="1546440960", output_folder="E:/OutputParamsFiles/OutputFiles"):
+    def __init__(self, data_fetcher, preprocessor, date="1546440960", output_folder="E:/OutputParamsFiles/OutputFiles", lambda_decay=10.0):
         self.date = date
+        self.lambda_decay = lambda_decay  # Exponential decay factor
         self.db_config = {
             'server': 'DESKTOP-DK79R4I',
             'database': 'DataMining',
@@ -83,9 +84,9 @@ class OptimizedRegularizedSVICalibrationPipeline:
                 train_data['log_moneyness'],
                 train_data['total_variance'],
                 train_data['residual_maturity'],
-                lr=1e-3,
+                lr=1e-2,
                 epochs=10000,
-                lambda_decay=100
+                lambda_decay = 50  # Include decay factor
             )
         except Exception as e:
             logging.error(f"Error during model fitting: {e}")
@@ -96,18 +97,8 @@ class OptimizedRegularizedSVICalibrationPipeline:
         return self.model_params
 
     def save_results(self, output_folder):
-        """
-        Save the model parameters to a CSV file.
-
-        Args:
-        - output_folder (str): Output folder to save results.
-
-        Returns:
-        - str: Path to the output file.
-        """
         os.makedirs(output_folder, exist_ok=True)
 
-        # Build a DataFrame with one row per maturity
         records = [
             {
                 "Maturity": maturity,
@@ -124,34 +115,24 @@ class OptimizedRegularizedSVICalibrationPipeline:
         return output_file
 
     def plot_individual_expiries(self, preprocessed_data):
-        """
-        Plot the fitted SVI models for individual expiries.
-
-        Args:
-        - preprocessed_data (pd.DataFrame): Processed data with log-moneyness and implied volatilities.
-        """
         unique_maturities = np.unique(preprocessed_data["Residual_Maturity"].values)
 
         for maturity in unique_maturities:
-            # Filter the data for the specific maturity
             subset = preprocessed_data[preprocessed_data["Residual_Maturity"] == maturity]
             log_moneyness = subset["Log_Moneyness"].values
             implied_volatility = subset["Implied_Volatility"].values
 
-            # Predict the SVI parameters for the maturity
             t = torch.tensor([maturity], dtype=torch.float32, device=self.model.device)
             with torch.no_grad():
                 svi_params = self.model.compute_svi_params(t).cpu().numpy()
             a, b, rho, m, sigma = svi_params[0]
 
-            # Generate the fitted smile curve
             log_moneyness_grid = np.linspace(log_moneyness.min() - 0.1, log_moneyness.max() + 0.1, 500)
             term1 = rho * (log_moneyness_grid - m)
             term2 = np.sqrt((log_moneyness_grid - m) ** 2 + sigma ** 2)
             total_variance = a + b * (term1 + term2)
-            fitted_volatility = np.sqrt(np.maximum(total_variance / maturity, 0))  # Ensure non-negative variance
+            fitted_volatility = np.sqrt(np.maximum(total_variance / maturity, 0))
 
-            # Plot the observed and fitted smiles
             plt.figure(figsize=(8, 6))
             plt.scatter(log_moneyness, implied_volatility, color="blue", label="Observed")
             plt.plot(log_moneyness_grid, fitted_volatility, color="red", label="Fitted", linewidth=2)
@@ -163,22 +144,14 @@ class OptimizedRegularizedSVICalibrationPipeline:
             plt.show()
 
     def plot_fitted_model(self, preprocessed_data):
-        """
-        Plot the fitted SVI model across residual maturity.
-
-        Args:
-        - preprocessed_data (pd.DataFrame): Training data used for fitting.
-        """
         log_moneyness = preprocessed_data["Log_Moneyness"].values
         residual_maturity = preprocessed_data["Residual_Maturity"].values
         implied_volatility = preprocessed_data["Implied_Volatility"].values
 
-        # Generate grid for predictions
         log_moneyness_grid = np.linspace(log_moneyness.min(), log_moneyness.max(), 100)
         maturity_grid = np.linspace(residual_maturity.min(), residual_maturity.max(), 100)
         log_moneyness_mesh, maturity_mesh = np.meshgrid(log_moneyness_grid, maturity_grid)
 
-        # Prepare fitted volatility grid
         fitted_volatility = np.zeros_like(log_moneyness_mesh)
         t_maturities = torch.tensor(maturity_grid, dtype=torch.float32, device=self.model.device)
 
@@ -187,13 +160,11 @@ class OptimizedRegularizedSVICalibrationPipeline:
 
         for i, (maturity, params) in enumerate(zip(maturity_grid, svi_params_grid)):
             a, b, rho, m, sigma = params
-
             term1 = rho * (log_moneyness_mesh[i, :] - m)
             term2 = np.sqrt((log_moneyness_mesh[i, :] - m) ** 2 + sigma ** 2)
             total_variance = a + b * (term1 + term2)
-            fitted_volatility[i, :] = np.sqrt(np.maximum(total_variance / maturity, 0))  # Ensure non-negative variance
+            fitted_volatility[i, :] = np.sqrt(np.maximum(total_variance / maturity, 0))
 
-        # Plot results
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111, projection="3d")
         ax.scatter(residual_maturity, log_moneyness, implied_volatility, color="red", label="Observed")
@@ -239,5 +210,7 @@ if __name__ == "__main__":
     from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
     from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
-    pipeline = OptimizedRegularizedSVICalibrationPipeline(DatabaseFetcher, IVPreprocessor)
+    # Initialize the pipeline with data fetcher, preprocessor, and desired configurations
+    pipeline = OptimizedRegularizedSVICalibrationPipeline(DatabaseFetcher,IVPreprocessor)
+    # Run the pipeline
     pipeline.run()
