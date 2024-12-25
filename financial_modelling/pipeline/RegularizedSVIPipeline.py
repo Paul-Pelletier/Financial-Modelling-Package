@@ -70,7 +70,7 @@ class RegularizedSVICalibrationPipeline:
 
         return self.data
 
-    def process_data(self, data, call_limits=(0.8, 1.1), put_limits=(0.9, 1.2)):
+    def process_data(self, data, call_limits=(0.9, 1.1), put_limits=(0.9, 1.1)):
         """
         Process the fetched data.
 
@@ -98,37 +98,40 @@ class RegularizedSVICalibrationPipeline:
         - dict: Fitted model parameters for each residual maturity.
         """
         if model is None:
-            self.model = RegularizedSVIModel()
+            self.model = RegularizedSVIModel(device=torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
         train_data = {
             'log_moneyness': preprocessed_data["Log_Moneyness"].values,
             'total_variance': (preprocessed_data["Implied_Volatility"].values ** 2) * preprocessed_data["Residual_Maturity"].values,
-            'residual_maturity': preprocessed_data["Residual_Maturity"].values
+            'residual_maturity': preprocessed_data["Residual_Maturity"].values,
+            'quote_unixtime': preprocessed_data["QUOTE_UNIXTIME"].values,
+            'expire_date': preprocessed_data["EXPIRE_UNIX"].values
         }
 
         logging.info("Starting model fitting...")
         logging.info(f"Training data sample: {preprocessed_data.head()}")
 
-        # Fit the model
-        fitted_params = model.fit(
-            train_data['log_moneyness'],
-            train_data['total_variance'],
-            train_data['residual_maturity'],
+        # Fit the model and store the results
+        self.model_params = model.fit(
+            log_moneyness=train_data['log_moneyness'],
+            total_variance=train_data['total_variance'],
+            residual_maturity=train_data['residual_maturity'],
+            quote_unixtime=train_data['quote_unixtime'],
+            expire_date=train_data['expire_date'],
             lr=1e-2,
-            epochs=200,
+            epochs=400,
             regularization_strength=1e-4,
-            lambda_decay = 0.5
+            lambda_decay=0.5
         )
 
-        # Store parameters using stringified maturities
-        self.model_params = {
-            f"{maturity:.6f}": params for maturity, params in fitted_params.items()
-        }
-
-        logging.info("Model fitting completed.")
-        logging.info(f"Fitted model parameters: {self.model_params}")
+        if not self.model_params:
+            logging.error("Model fitting failed; no parameters returned.")
+        else:
+            logging.info("Model fitting completed.")
+            logging.info(f"Fitted model parameters: {self.model_params}")
 
         return self.model_params
+
 
 
     def plot_fitted_model(self, preprocessed_data):
@@ -179,23 +182,25 @@ class RegularizedSVICalibrationPipeline:
 
         Args:
         - preprocessed_data (pd.DataFrame): Processed data with log-moneyness and implied volatilities.
-        - model (RegularizedSVIModel): Fitted SVI model.
         """
+        if not self.model_params:
+            logging.error("No model parameters available for plotting.")
+            return
+
         unique_maturities = np.unique(preprocessed_data["Residual_Maturity"].values)
 
-        # Convert keys of model_params to a NumPy array for robust matching
-        model_maturities = np.array(list(self.model_params.keys()), dtype=np.float32)
-
+        # Iterate through unique maturities to find the matching key
         for maturity in unique_maturities:
-            # Find the closest match in model_params keys
-            closest_match_idx = np.argmin(np.abs(model_maturities - maturity))
-            closest_match = model_maturities[closest_match_idx]
+            # Match keys in the model_params dictionary
+            matched_key = next(
+                (
+                    key for key in self.model_params.keys()
+                    if np.isclose(key[2], maturity, atol=1e-6)
+                ),
+                None
+            )
 
-            # Retrieve the exact key from the dictionary
-            closest_key = list(self.model_params.keys())[closest_match_idx]
-
-            # Check if the closest match is within a reasonable tolerance
-            if not np.isclose(maturity, closest_match, atol=1e-6):
+            if matched_key is None:
                 logging.warning(f"No matching parameters found for maturity {maturity:.6f}. Skipping.")
                 continue
 
@@ -204,7 +209,7 @@ class RegularizedSVICalibrationPipeline:
             implied_volatility = subset["Implied_Volatility"].values
 
             # Retrieve fitted parameters for this maturity
-            params = self.model_params[closest_key]
+            params = self.model_params[matched_key]
             a, b, rho, m, sigma = params['a'], params['b'], params['rho'], params['m'], params['sigma']
 
             # Validate parameters
@@ -229,6 +234,7 @@ class RegularizedSVICalibrationPipeline:
             plt.legend()
             plt.grid(True)
             plt.show()
+
 
     def run(self, output_folder=None):
         """
@@ -256,41 +262,40 @@ class RegularizedSVICalibrationPipeline:
         # Step 3: Initialize the RegularizedSVIModel with the selected device
         model = RegularizedSVIModel(device=device)
 
-        # Step 4: Fit the model to the preprocessed data
+    # Step 4: Fit the model to the preprocessed data
         fitted_params = self.fit_model(preprocessed_data, model)
 
-        # Step 5: Save results
-        if output_folder is None:
-            output_folder = self.output_folder
-        os.makedirs(output_folder, exist_ok=True)
+        if not fitted_params:
+            logging.error("No fitted parameters returned. Exiting pipeline.")
+            return
 
-        # Build a DataFrame with one row per maturity
+        logging.info(f"Fitted parameters: {fitted_params}")
+
+        # Step 5: Save results
         records = [
             {
-                "Maturity": float(maturity_str),
+                "QUOTE_UNIXTIME": quote_unixtime,
+                "EXPIRE_DATE": expire_date,
+                "Maturity": maturity,
                 "a": params["a"],
                 "b": params["b"],
                 "rho": params["rho"],
                 "m": params["m"],
                 "sigma": params["sigma"],
             }
-            for maturity_str, params in fitted_params.items()
+            for (quote_unixtime, expire_date, maturity), params in fitted_params.items()
         ]
 
-        # Convert to DataFrame
+        if not records:
+            logging.error("No records to save. Skipping output.")
+            return
+
         df_output = pd.DataFrame(records).sort_values("Maturity")
-
-        # Define the output file path
         output_file = os.path.join(output_folder, f"output_{self.date}.csv")
-
-        # Save the DataFrame to a CSV file
         df_output.to_csv(output_file, index=False)
+        #self.plot_individual_expiries(preprocessed_data)
 
         logging.info(f"Results saved to {output_file}")
-
-        # (Optional) Step 6: Visualize the results with plots
-        #self.plot_fitted_model(preprocessed_data)
-        #self.plot_individual_expiries(preprocessed_data)
 
 if __name__ == "__main__":
     # Configure logging
@@ -299,4 +304,4 @@ if __name__ == "__main__":
     from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
     pipeline = RegularizedSVICalibrationPipeline(DatabaseFetcher, IVPreprocessor)
-    pipeline.run()
+    pipeline.run("D://")

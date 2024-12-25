@@ -25,7 +25,7 @@ class IVPreprocessor(Preprocessor):
         self.call_vol_col = call_vol_col
         self.put_vol_col = put_vol_col
 
-    def preprocess(self, call_limits = (0.9,1.10), put_limits = (0.9,1.10), volume_limits=1, mode="overlap"):
+    def preprocess(self, call_limits = (0.9,1.10), put_limits = (0.9,1.10), volume_limits=2, mode="overlap"):
         """
         Preprocess the data to select calls and puts based on Strike/Spot limits, and concatenate or split the data.
 
@@ -54,12 +54,12 @@ class IVPreprocessor(Preprocessor):
             ]
 
             # Prepare call data
-            call_data = combined_data[[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE']]
+            call_data = combined_data[[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE', 'QUOTE_UNIXTIME', 'EXPIRE_UNIX']]
             call_data = call_data.rename(columns={self.call_iv_col: "Implied_Volatility", self.call_vol_col: "Volume"})
             call_data['Option Type'] = 'Call'
 
             # Prepare put data
-            put_data = combined_data[[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE']]
+            put_data = combined_data[[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE', 'QUOTE_UNIXTIME', 'EXPIRE_UNIX']]
             put_data = put_data.rename(columns={self.put_iv_col: "Implied_Volatility", self.put_vol_col: "Volume"})
             put_data['Option Type'] = 'Put'
 
@@ -70,7 +70,7 @@ class IVPreprocessor(Preprocessor):
             # Select calls based on the limits
             call_data = self.data[
                 (self.data['Strike/Spot'] >= call_limits[0]) & (self.data['Strike/Spot'] <= call_limits[1])
-            ][[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE']]
+            ][[self.strike_col, self.spot_col, self.call_iv_col, self.call_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE', 'QUOTE_UNIXTIME', 'EXPIRE_UNIX']]
 
             call_data = call_data.rename(columns={self.call_iv_col: 'Implied_Volatility', self.call_vol_col: 'Volume'})
             call_data['Option Type'] = 'Call'
@@ -78,7 +78,7 @@ class IVPreprocessor(Preprocessor):
             # Select puts based on the limits
             put_data = self.data[
                 (self.data['Strike/Spot'] >= put_limits[0]) & (self.data['Strike/Spot'] <= put_limits[1])
-            ][[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE']]
+            ][[self.strike_col, self.spot_col, self.put_iv_col, self.put_vol_col, 'Residual_Maturity', 'STRIKE_DISTANCE', 'QUOTE_UNIXTIME', 'EXPIRE_UNIX']]
 
             put_data = put_data.rename(columns={self.put_iv_col: 'Implied_Volatility', self.put_vol_col: 'Volume'})
             put_data['Option Type'] = 'Put'
@@ -94,7 +94,7 @@ class IVPreprocessor(Preprocessor):
         
 
         # Select final columns
-        final_data = combined_data[['Log_Moneyness', 'Implied_Volatility', 'Volume', 'Option Type', 'Residual_Maturity','STRIKE_DISTANCE']]
+        final_data = combined_data[['Log_Moneyness', 'Implied_Volatility', 'Volume', 'Option Type', 'Residual_Maturity','STRIKE_DISTANCE', 'QUOTE_UNIXTIME', 'EXPIRE_UNIX']]
 
         # Drop rows where Implied Volatility is NaN or Volume < volume_limits
         final_data = final_data.dropna(subset=['Implied_Volatility'])

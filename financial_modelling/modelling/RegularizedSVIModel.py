@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import numpy as np
+import logging
 
 class RegularizedSVIModel(nn.Module):
     def __init__(self, device):
@@ -19,7 +20,13 @@ class RegularizedSVIModel(nn.Module):
         term2 = torch.sqrt((log_moneyness - self.m) ** 2 + self.sigma ** 2)
         return self.a + self.b * (term1 + term2)
 
-    def fit(self, log_moneyness, total_variance, residual_maturity, lr=1e-3, epochs=1000, regularization_strength=1e-3, lambda_decay=50, min_atm_volatility=0.1):
+    def fit(self, log_moneyness, total_variance, residual_maturity, quote_unixtime, expire_date, lr=1e-3, epochs=1000, regularization_strength=1e-3, lambda_decay=50, min_atm_volatility=0.1):
+        """
+        Fit the model with additional metadata (QUOTE_UNIXTIME, EXPIRE_DATE, and Maturity).
+
+        Returns:
+        - dict: Parameters keyed by a tuple of (QUOTE_UNIXTIME, EXPIRE_DATE, Maturity).
+        """
         unique_maturities = np.unique(residual_maturity)
         param_dict = {}
 
@@ -38,6 +45,10 @@ class RegularizedSVIModel(nn.Module):
                 mask = residual_maturity == maturity
                 log_moneyness_subset = torch.tensor(log_moneyness[mask], dtype=torch.float32, device=self.device)
                 total_variance_subset = torch.tensor(total_variance[mask], dtype=torch.float32, device=self.device)
+
+                if log_moneyness_subset.numel() == 0 or total_variance_subset.numel() == 0:
+                    logging.warning(f"No data for maturity {maturity}. Skipping.")
+                    continue
 
                 a, b, rho, m, sigma = params[i]
                 term1 = rho * (log_moneyness_subset - m)
@@ -62,9 +73,17 @@ class RegularizedSVIModel(nn.Module):
             optimizer.step()
 
             if epoch % 100 == 0:
-                print(f"Epoch {epoch}/{epochs}, Total Loss: {total_loss.item()}")
+                logging.info(f"Epoch {epoch}/{epochs}, Total Loss: {total_loss.item()}")
 
+        # Populate param_dict with QUOTE_UNIXTIME, EXPIRE_DATE, and Maturity
         for i, maturity in enumerate(unique_maturities):
-            param_dict[np.float32(maturity)] = {key: value.item() for key, value in zip(['a', 'b', 'rho', 'm', 'sigma'], params[i])}
+            mask = residual_maturity == maturity
+            unique_quote_unixtime = np.unique(quote_unixtime[mask])[0]
+            unique_expire_date = np.unique(expire_date[mask])[0]
 
+            param_dict[(unique_quote_unixtime, unique_expire_date, maturity)] = {
+                key: value.item() for key, value in zip(['a', 'b', 'rho', 'm', 'sigma'], params[i])
+            }
+
+        logging.info(f"Final fitted parameters: {param_dict}")
         return param_dict
