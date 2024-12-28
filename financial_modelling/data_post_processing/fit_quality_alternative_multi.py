@@ -3,13 +3,14 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_error
-from tqdm import tqdm
+from multiprocessing import Pool, cpu_count, Manager
 from financial_modelling.utils.utils import get_unixtimestamp_readable
 from financial_modelling.modelling.SVIModel import SVIModel as svi
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher as dbf
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor as ivp
 from financial_modelling.data_acquisition.list_of_files_fetcher import ListOfFilesFetcher as loff
 import warnings
+from tqdm import tqdm 
 
 # Function to compute R2 and RMSE
 def compute_metrics(predicted, actual):
@@ -19,7 +20,6 @@ def compute_metrics(predicted, actual):
 
 # Function to get the fitted SVI parameters
 folder = r"E:\OutputParamsFiles\OutputFiles"
-
 def get_the_fitted_params_file(date, folder):
     file_path = os.path.join(folder, f"output_{date}.csv")
     return pd.read_csv(file_path, sep=",")
@@ -37,10 +37,10 @@ def get_the_fitted_params(dataframe, expiry, date):
     }
     return params, maturity
 
-def process_single_date(date):
-    # Connection configuration
+def process_single_date(date, output_folder):
     warnings.filterwarnings("ignore", category=RuntimeWarning)
     warnings.filterwarnings("ignore", category=UserWarning)
+    # Connection configuration
     DB_CONFIG = {
         'server': 'DESKTOP-DK79R4I',  # Your server name
         'database': 'DataMining',     # Your database name
@@ -65,7 +65,7 @@ def process_single_date(date):
 
     if raw_data.empty:
         logging.warning(f"No data available for date: {date}")
-        return []
+        return None
 
     processed_data = ivp(raw_data).preprocess()
 
@@ -106,48 +106,61 @@ def process_single_date(date):
             "RMSE": rmse
         })
 
-    return results
+    if results:
+        intermediate_csv = os.path.join(output_folder, f"svi_results_{date}.csv")
+        pd.DataFrame(results).to_csv(intermediate_csv, index=False)
+        return intermediate_csv
+
+    return None
+
+def process_single_date_wrapper(args):
+    date, output_folder = args
+    return process_single_date(date, output_folder)
 
 def main():
-    from financial_modelling.data_acquisition.list_of_files_fetcher import ListOfFilesFetcher as loff
-    
     folder = r"E:\OutputParamsFiles\OutputFiles"
-    output_folder = r"E:\OutputParamsFiles\SVI quality fit"
-    output_csv_path = os.path.join(output_folder, "svi_results.csv")
-
-    # Ensure output folder exists
+    output_folder = r"E:\OutputParamsFiles\SVI_quality_fit"
+    consolidated_csv_path = os.path.join(output_folder, "svi_results.csv")
     os.makedirs(output_folder, exist_ok=True)
-
+    
     # Fetch list of fitted dates
-    loff = loff()
-    loff.fetch(folder)
-    loff.get_unixtimestamp()
-    list_of_fitted_dates = loff.list_of_dates
+    loff_instance = loff()
+    loff_instance.fetch(folder)
+    loff_instance.get_unixtimestamp()
+    list_of_fitted_dates = loff_instance.list_of_dates
 
-    # Initialize progress bar
-    results = []
-    for date in tqdm(list_of_fitted_dates[:100], desc="Processing Dates"):
-        results.extend(process_single_date(date))
+    # Initialize the progress bar
+    with Manager() as manager:
+        progress_bar = tqdm(total=len(list_of_fitted_dates), desc="Processing Dates")
+        results = []
 
-    # Save results to a CSV file
-    results_df = pd.DataFrame(results)
-    results_df.to_csv(output_csv_path, index=False)
-    print(f"Results saved to: {output_csv_path}")
+        def update_progress_bar(result):
+            progress_bar.update()
+            if result:
+                results.append(result)
+
+        # Prepare arguments for the wrapper function
+        tasks = [(date, output_folder) for date in list_of_fitted_dates]
+
+        # Initialize the Pool
+        with Pool(cpu_count()) as pool:
+            for result in pool.imap_unordered(process_single_date_wrapper, tasks):
+                update_progress_bar(result)
+
+        progress_bar.close()
+
+    # Consolidate all intermediate files
+    intermediate_files = [file for file in results if file is not None]
+    consolidated_data = pd.concat(
+        [pd.read_csv(file) for file in intermediate_files], ignore_index=True
+    )
+    consolidated_data.to_csv(consolidated_csv_path, index=False)
+    print(f"Consolidated results saved to: {consolidated_csv_path}")
+
+    # Clean up intermediate files
+    for file in intermediate_files:
+        os.remove(file)
+    print("Intermediate files have been deleted.")
 
 if __name__ == "__main__":
-    import cProfile
-    import pstats
-
-    profiler = cProfile.Profile()
-    profiler.enable()
-    
     main()
-    
-    profiler.disable()
-    with open("profile_output.prof", "w") as f:
-        stats = pstats.Stats(profiler, stream=f)
-        stats.strip_dirs()
-        stats.sort_stats("cumulative")
-        stats.print_stats()
-
-    print("Profile saved to profile_output.prof")
