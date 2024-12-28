@@ -126,7 +126,7 @@ def main():
             pbar.update(1)
             return result
 
-        with Pool(20) as pool:
+        with Pool(23) as pool:
         #with Pool(1) as pool:
             all_results = pool.map(process_single_date, list_of_fitted_dates)
 
@@ -136,6 +136,7 @@ def main():
 
     # Save results to a CSV file
     results_df = pd.DataFrame(flattened_results)
+    output_folder = r"E:\OutputParamsFiles\SVI quality fit"
     output_csv_path = os.path.join(folder, "svi_results.csv")
     results_df.to_csv(output_csv_path, index=False)
 

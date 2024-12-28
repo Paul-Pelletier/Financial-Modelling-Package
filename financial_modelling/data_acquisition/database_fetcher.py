@@ -25,8 +25,8 @@ class DatabaseFetcher(DataFetcher):
         use_sqlalchemy : bool, optional
             If True, uses sqlalchemy for the connection. Otherwise, uses pyodbc.
         """
-        logging.basicConfig(level=logging.INFO)
-        logging.info(f"DatabaseFetcher initialized with {connection_string}")
+        #logging.basicConfig(level=logging.INFO)
+        #logging.info(f"DatabaseFetcher initialized with {connection_string}")
         self.connection_string = connection_string
         self.use_sqlalchemy = use_sqlalchemy
         self.connection_time = None  # Store connection time for performance tracking
@@ -37,7 +37,7 @@ class DatabaseFetcher(DataFetcher):
                 self.engine = create_engine(self.connection_string)
                 end_time = time.time()
                 self.connection_time = end_time - start_time
-                print(f"SQLAlchemy engine created in {self.connection_time * 1000:.2f} ms")
+                #print(f"SQLAlchemy engine created in {self.connection_time * 1000:.2f} ms")
             except Exception as e:
                 raise ValueError(f"Failed to create SQLAlchemy engine: {e}")
         else:
@@ -46,7 +46,7 @@ class DatabaseFetcher(DataFetcher):
                 self.conn = pyodbc.connect(self.connection_string)
                 end_time = time.time()
                 self.connection_time = end_time - start_time
-                print(f"pyodbc connection established in {self.connection_time * 1000:.2f} ms")
+                #print(f"pyodbc connection established in {self.connection_time * 1000:.2f} ms")
             except Exception as e:
                 raise ValueError(f"Failed to connect using pyodbc: {e}")
 
@@ -78,7 +78,7 @@ class DatabaseFetcher(DataFetcher):
                 start_time = time.time()
                 df = pd.read_sql(query, self.conn)
                 end_time = time.time()
-                print(f"Query executed in {end_time - start_time:.4f} seconds")
+                #print(f"Query executed in {end_time - start_time:.4f} seconds")
                 return df
             except Exception as e:
                 raise ValueError(f"Failed to execute query using pyodbc: {e}")
@@ -88,6 +88,6 @@ class DatabaseFetcher(DataFetcher):
         if not self.use_sqlalchemy:
             try:
                 self.conn.close()
-                print("pyodbc connection closed.")
+                #print("pyodbc connection closed.")
             except Exception as e:
                 print(f"Error closing pyodbc connection: {e}")
