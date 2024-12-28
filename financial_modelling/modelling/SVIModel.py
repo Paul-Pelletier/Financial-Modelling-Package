@@ -17,7 +17,8 @@ class SVIModel:
         """
         SVI formula: w(k) = a + b * (rho * (k - m) + sqrt((k - m)^2 + sigma^2))
         """
-        term1 = rho * (log_moneyness - m)
+        log_moneyness = np.array(log_moneyness)
+        term1 = rho * (log_moneyness - m*np.ones(len(log_moneyness)))
         term2 = np.sqrt((log_moneyness - m) ** 2 + sigma ** 2)
         return a + b * (term1 + term2)
 
