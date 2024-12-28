@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_error
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, Manager
 from financial_modelling.utils.utils import get_unixtimestamp_readable
 from financial_modelling.modelling.SVIModel import SVIModel as svi
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher as dbf
@@ -111,34 +111,46 @@ def process_single_date(date):
 
 def main():
     from financial_modelling.data_acquisition.list_of_files_fetcher import ListOfFilesFetcher as loff
-    # Suppress all RuntimeWarnings
-    #warnings.filterwarnings("ignore", category=RuntimeWarning)
+    
+    folder = r"E:\OutputParamsFiles\OutputFiles"
+    output_folder = r"E:\OutputParamsFiles\SVI quality fit"
+    output_csv_path = os.path.join(output_folder, "svi_results.csv")
+    
+    # Fetch list of fitted dates
     loff = loff()
     loff.fetch(folder)
     loff.get_unixtimestamp()
     list_of_fitted_dates = loff.list_of_dates
 
-    # Initialize the progress bar
-    with tqdm(total=len(list_of_fitted_dates), desc="Processing Dates") as pbar:
-        # Wrap the process_single_date with tqdm updates
-        def update_progress(date):
-            result = process_single_date(date)
-            pbar.update(1)
+    # Initialize the progress bar using Manager
+    with Manager() as manager:
+        # Shared progress bar
+        progress_bar = tqdm(total=len(list_of_fitted_dates), desc="Processing Dates")
+
+        # Define a function to update the progress bar
+        def update_progress_bar(result):
+            progress_bar.update()
             return result
 
-        with Pool(23) as pool:
-        #with Pool(1) as pool:
-            all_results = pool.map(process_single_date, list_of_fitted_dates)
+        results = []
 
+        # Initialize the Pool
+        with Pool(23) as pool:  # Adjust number of processes to your system
+            # Process dates with progress bar callback
+            for result in pool.imap_unordered(process_single_date, list_of_fitted_dates):
+                results.append(result)
+                update_progress_bar(result)
 
-    # Flatten the list of results
-    flattened_results = [result for sublist in all_results for result in sublist]
+        # Close the progress bar
+        progress_bar.close()
+
+    # Flatten the list of results if necessary
+    flattened_results = [item for sublist in results for item in sublist]
 
     # Save results to a CSV file
     results_df = pd.DataFrame(flattened_results)
-    output_folder = r"E:\OutputParamsFiles\SVI quality fit"
-    output_csv_path = os.path.join(folder, "svi_results.csv")
     results_df.to_csv(output_csv_path, index=False)
+    print(f"Results saved to: {output_csv_path}")
 
 if __name__ == "__main__":
     main()
