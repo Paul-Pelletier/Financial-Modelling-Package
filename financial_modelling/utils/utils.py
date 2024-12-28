@@ -1,4 +1,7 @@
 import os
+from datetime import datetime
+import logging
+import pytz
 
 def replace_commas(value):
     return float(value.replace(',', '.'))
@@ -33,3 +36,7 @@ def get_file_names(folder_path):
                   if os.path.isfile(os.path.join(folder_path, f))]
 
     return file_names
+
+#Function get_unixtimestamp_readable for logging purposes
+def get_unixtimestamp_readable(unixtimestamp):
+    return datetime.fromtimestamp(unixtimestamp, pytz.timezone("US/Eastern")).strftime('%d-%m-%Y %H:%M')
