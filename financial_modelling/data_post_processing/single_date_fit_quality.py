@@ -114,7 +114,7 @@ if __name__ == "__main__":
             print(f"Expiry: {expiry}, R²: {r2:.4f}, RMSE: {rmse:.4f}")
             
             # Plot results
-            plot_results(log_moneyness, market_iv, fitted_iv, expiry, date)
+            #plot_results(log_moneyness, market_iv, fitted_iv, expiry, date)
         
         except Exception as e:
             print(f"Error processing expiry {expiry}: {e}")

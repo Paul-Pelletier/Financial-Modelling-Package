@@ -3,14 +3,12 @@ import os
 import numpy as np
 import pandas as pd
 from sklearn.metrics import r2_score, mean_squared_error
-from multiprocessing import Pool, cpu_count, Manager
+from tqdm import tqdm
 from financial_modelling.utils.utils import get_unixtimestamp_readable
 from financial_modelling.modelling.SVIModel import SVIModel as svi
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher as dbf
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor as ivp
 from financial_modelling.data_acquisition.list_of_files_fetcher import ListOfFilesFetcher as loff
-import warnings
-from tqdm import tqdm 
 
 # Function to compute R2 and RMSE
 def compute_metrics(predicted, actual):
@@ -20,6 +18,7 @@ def compute_metrics(predicted, actual):
 
 # Function to get the fitted SVI parameters
 folder = r"E:\OutputParamsFiles\OutputFiles"
+
 def get_the_fitted_params_file(date, folder):
     file_path = os.path.join(folder, f"output_{date}.csv")
     return pd.read_csv(file_path, sep=",")
@@ -38,8 +37,6 @@ def get_the_fitted_params(dataframe, expiry, date):
     return params, maturity
 
 def process_single_date(date):
-    warnings.filterwarnings("ignore", category=RuntimeWarning)
-    warnings.filterwarnings("ignore", category=UserWarning)
     # Connection configuration
     DB_CONFIG = {
         'server': 'DESKTOP-DK79R4I',  # Your server name
@@ -108,49 +105,46 @@ def process_single_date(date):
 
     return results
 
-
 def main():
     from financial_modelling.data_acquisition.list_of_files_fetcher import ListOfFilesFetcher as loff
     
     folder = r"E:\OutputParamsFiles\OutputFiles"
     output_folder = r"E:\OutputParamsFiles\SVI quality fit"
     output_csv_path = os.path.join(output_folder, "svi_results.csv")
-    
+
+    # Ensure output folder exists
+    os.makedirs(output_folder, exist_ok=True)
+
     # Fetch list of fitted dates
     loff = loff()
     loff.fetch(folder)
     loff.get_unixtimestamp()
     list_of_fitted_dates = loff.list_of_dates
 
-    # Initialize the progress bar using Manager
-    with Manager() as manager:
-        # Shared progress bar
-        progress_bar = tqdm(total=len(list_of_fitted_dates), desc="Processing Dates")
-
-        # Define a function to update the progress bar
-        def update_progress_bar(result):
-            progress_bar.update()
-            return result
-
-        results = []
-
-        # Initialize the Pool
-        with Pool(23) as pool:  # Adjust number of processes to your system
-            # Process dates with progress bar callback
-            for result in pool.imap_unordered(process_single_date, list_of_fitted_dates):
-                results.append(result)
-                update_progress_bar(result)
-
-        # Close the progress bar
-        progress_bar.close()
-
-    # Flatten the list of results if necessary
-    flattened_results = [item for sublist in results for item in sublist]
+    # Initialize progress bar
+    results = []
+    for date in tqdm(list_of_fitted_dates, desc="Processing Dates"):
+        results.extend(process_single_date(date))
 
     # Save results to a CSV file
-    results_df = pd.DataFrame(flattened_results)
+    results_df = pd.DataFrame(results)
     results_df.to_csv(output_csv_path, index=False)
     print(f"Results saved to: {output_csv_path}")
 
 if __name__ == "__main__":
+    import cProfile
+    import pstats
+
+    profiler = cProfile.Profile()
+    profiler.enable()
+    
     main()
+    
+    profiler.disable()
+    with open("profile_output.prof", "w") as f:
+        stats = pstats.Stats(profiler, stream=f)
+        stats.strip_dirs()
+        stats.sort_stats("cumulative")
+        stats.print_stats()
+
+    print("Profile saved to profile_output.prof")
