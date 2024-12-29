@@ -40,7 +40,7 @@ def main():
     output_folder = "E://OutputParamsFiles//OutputFiles_test"
 
     # 4) Iterate over each CSV file
-    for i, file_name in enumerate(files_list):
+    for i, file_name in enumerate(files_list[:1]):
         file_path = os.path.join(source_folder_path, file_name)
         print(f"Processing file {i+1}/{len(files_list)}: {file_name}")
 
@@ -52,7 +52,7 @@ def main():
             continue
 
         # 5) Parallelize over all rows (unique QUOTE_UNIXTIME) in the CSV
-        quote_times = file_df["QUOTE_UNIXTIME"]
+        quote_times = file_df["QUOTE_UNIXTIME"][:100]
         with ProcessPoolExecutor(max_workers = 24) as executor:
             executor.map(process_date, quote_times, [output_folder] * len(quote_times))
 
