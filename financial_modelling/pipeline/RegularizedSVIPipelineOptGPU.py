@@ -7,37 +7,26 @@ import pytz
 import matplotlib.pyplot as plt
 from financial_modelling.modelling.RegularizedSVIModelOptGPU import RegularizedSVIModel
 import torch
-from torch.cuda.amp import autocast, GradScaler
+from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
+from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
+
 
 class RegularizedSVICalibrationPipeline:
-    def __init__(self, data_fetcher, preprocessor, date="1546439410", output_folder="E:/OutputParamsFiles/OutputFiles"):
+    def __init__(self, connection_string, preprocessor, date="1546439410", output_folder="E:/OutputParamsFiles/OutputFiles"):
         """
-        Initialize the pipeline with GPU support.
+        Initialize the pipeline.
 
         Args:
-        - data_fetcher: Instance of a data fetcher class.
+        - connection_string: Database connection string.
         - preprocessor: Preprocessor class for data processing.
         - date (str): Unix timestamp in string format.
         - output_folder (str): Path to save output files.
         """
         self.date = date
-        self.db_config = {
-            'server': 'DESKTOP-DK79R4I',
-            'database': 'DataMining',
-        }
-        self.connection_string = (
-            f"DRIVER={{SQL Server}};"
-            f"SERVER={self.db_config['server']};"
-            f"DATABASE={self.db_config['database']};"
-            f"Trusted_Connection=yes;"
-        )
-        self.fetcher = data_fetcher(self.connection_string, use_sqlalchemy=False)
+        self.fetcher = DatabaseFetcher(connection_string=connection_string, use_sqlalchemy=False)
         self.preprocessor_class = preprocessor
         self.output_folder = output_folder
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.scaler = GradScaler()
-
-        # Internal attributes for pipeline flow
         self.data = None
         self.preprocessed_data = None
         self.model_params = None
@@ -100,8 +89,7 @@ class RegularizedSVICalibrationPipeline:
         Returns:
         - dict: Fitted model parameters for each residual maturity.
         """
-        self.model = model
-        if self.model is None:
+        if model is None:
             self.model = RegularizedSVIModel(device=self.device)
 
         train_data = {
@@ -115,19 +103,17 @@ class RegularizedSVICalibrationPipeline:
         logging.info("Starting model fitting...")
         logging.info(f"Training data sample: {preprocessed_data.head()}")
 
-        # Use mixed precision training with the correct device_type
-        with torch.amp.autocast(device_type="cuda", dtype=torch.float16):
-            self.model_params = self.model.fit(
-                log_moneyness=train_data['log_moneyness'],
-                total_variance=train_data['total_variance'],
-                residual_maturity=train_data['residual_maturity'],
-                quote_unixtime=train_data['quote_unixtime'],
-                expire_date=train_data['expire_date'],
-                lr=1e-2,
-                epochs=200,
-                regularization_strength=1e-4,
-                lambda_decay=0.5
-            )
+        self.model_params = self.model.fit(
+            log_moneyness=train_data['log_moneyness'],
+            total_variance=train_data['total_variance'],
+            residual_maturity=train_data['residual_maturity'],
+            quote_unixtime=train_data['quote_unixtime'],
+            expire_date=train_data['expire_date'],
+            lr=1e-2,
+            epochs=400,
+            regularization_strength=1e-4,
+            lambda_decay=0.5
+        )
 
         if not self.model_params:
             logging.error("Model fitting failed; no parameters returned.")
@@ -148,30 +134,20 @@ class RegularizedSVICalibrationPipeline:
         - None
         """
         output_folder = output_folder or self.output_folder
-
         logging.info(f"Using device: {self.device}")
 
-        # Step 1: Fetch data
         fetched_data = self.fetch_data()
         if fetched_data.empty:
             logging.warning("No data to process.")
             return
 
-        # Step 2: Process data
         preprocessed_data = self.process_data(fetched_data)
+        fitted_params = self.fit_model(preprocessed_data)
 
-        # Step 3: Initialize model
-        model = RegularizedSVIModel(device=self.device)
-
-        # Step 4: Fit the model
-        fitted_params = self.fit_model(preprocessed_data, model)
         if not fitted_params:
             logging.error("No fitted parameters returned. Exiting pipeline.")
             return
 
-        logging.info(f"Fitted parameters: {fitted_params}")
-
-        # Step 5: Save results
         records = [
             {
                 "QUOTE_UNIXTIME": quote_unixtime,
@@ -197,13 +173,21 @@ class RegularizedSVICalibrationPipeline:
 
 
 if __name__ == "__main__":
-    # Configure logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-    from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
-    from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
-    pipeline = RegularizedSVICalibrationPipeline(DatabaseFetcher, IVPreprocessor)
-    from datetime import datetime
-    start = datetime.now()
+    # Provide the connection string for DatabaseFetcher
+    connection_string = (
+        "DRIVER={SQL Server};"
+        "SERVER=DESKTOP-DK79R4I;"
+        "DATABASE=DataMining;"
+        "Trusted_Connection=yes;"
+    )
+
+    pipeline = RegularizedSVICalibrationPipeline(
+        connection_string=connection_string,
+        preprocessor=IVPreprocessor
+    )
+
+    start_time = datetime.now()
     pipeline.run("D://")
-    print("Elapsed time: ", datetime.now() - start)
+    print("Elapsed time: ", datetime.now() - start_time)
