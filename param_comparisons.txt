@@ -1,0 +1,10 @@
+Comparison for worker 0: {'a_diff': np.float32(0.001826983), 'b_diff': np.float32(0.0038409084), 'rho_diff': np.float32(0.01448077), 'm_diff': np.float32(0.0006213038), 'sigma_diff': np.float32(0.0109681785)}
+Comparison for worker 1: {'a_diff': np.float32(0.0015607923), 'b_diff': np.float32(0.0032808483), 'rho_diff': np.float32(0.011736482), 'm_diff': np.float32(0.0003903326), 'sigma_diff': np.float32(0.009360507)}
+Comparison for worker 2: {'a_diff': np.float32(0.0015651248), 'b_diff': np.float32(0.0032899007), 'rho_diff': np.float32(0.011764705), 'm_diff': np.float32(0.00039036555), 'sigma_diff': np.float32(0.009385467)}
+Comparison for worker 3: {'a_diff': np.float32(0.0018125363), 'b_diff': np.float32(0.003813602), 'rho_diff': np.float32(0.014155209), 'm_diff': np.float32(0.0005620764), 'sigma_diff': np.float32(0.0108894855)}
+Comparison for worker 4: {'a_diff': np.float32(0.0017969012), 'b_diff': np.float32(0.0037902817), 'rho_diff': np.float32(0.013441026), 'm_diff': np.float32(0.0004039304), 'sigma_diff': np.float32(0.010821879)}
+Comparison for worker 5: {'a_diff': np.float32(0.0016296953), 'b_diff': np.float32(0.0033109486), 'rho_diff': np.float32(0.018852532), 'm_diff': np.float32(0.0021410924), 'sigma_diff': np.float32(0.009463057)}
+Comparison for worker 6: {'a_diff': np.float32(0.0016049258), 'b_diff': np.float32(0.0033672526), 'rho_diff': np.float32(0.01253745), 'm_diff': np.float32(0.0005210466), 'sigma_diff': np.float32(0.009606913)}
+Comparison for worker 7: {'a_diff': np.float32(0.0017852746), 'b_diff': np.float32(0.0037625656), 'rho_diff': np.float32(0.013503313), 'm_diff': np.float32(0.00044187132), 'sigma_diff': np.float32(0.010740653)}
+Comparison for worker 8: {'a_diff': np.float32(0.0015736632), 'b_diff': np.float32(0.0033053905), 'rho_diff': np.float32(0.0119917095), 'm_diff': np.float32(0.00043453556), 'sigma_diff': np.float32(0.009430677)}
+Comparison for worker 9: {'a_diff': np.float32(0.0013183467), 'b_diff': np.float32(0.002928242), 'rho_diff': np.float32(0.0003862083), 'm_diff': np.float32(0.0023618396), 'sigma_diff': np.float32(0.008382499)}

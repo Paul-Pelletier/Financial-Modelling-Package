@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytz
 import matplotlib.pyplot as plt
-from financial_modelling.prototypes.RegularizedSVIModelOptGPU import RegularizedSVIModel
+from RegularizedSVIModelOptGPU import RegularizedSVIModel
 import torch
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor

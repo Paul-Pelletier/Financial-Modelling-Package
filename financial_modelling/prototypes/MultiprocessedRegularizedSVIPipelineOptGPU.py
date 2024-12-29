@@ -7,7 +7,7 @@ from financial_modelling.pipeline.fetch_and_split_to_multiple_quote_dates_pipeli
 from financial_modelling.utils.utils import get_file_names
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
-from financial_modelling.prototypes.RegularizedSVIPipelineOptGPU import RegularizedSVICalibrationPipeline
+from RegularizedSVIPipelineOptGPU import RegularizedSVICalibrationPipeline
 
 
 def process_date_gpu(date, output_folder, connection_string):
