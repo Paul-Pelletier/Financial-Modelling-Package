@@ -49,7 +49,6 @@ class NonLinearModel:
         logging.info("Model fitting complete.")
         return self.fitted_params
 
-
     def predict(self, x_test, maturity):
         """
         Predict output for the given input data.
@@ -94,27 +93,16 @@ def generate_params(usual_params, number_of_maturities = 10):
 def generate_data(generated_params):
     x = [np.linspace(-0.20,0.20,10) for i in range(len(generated_params))]
     y = [NonLinearModel.functional_form(x[i], generated_params[i][:-1], generated_params[i][-1]) for i in range(len(generated_params))]
-
     x_flat = list(chain.from_iterable(x))
     y_flat = list(chain.from_iterable(y))
     return tensor(x_flat, dtype = float32), tensor(y_flat, dtype = float32)
 
-def fit_model(x_train, y_train, maturity):
-    model = NonLinearModel()
-    model.fit(x_train, y_train, maturity)
-    return model.fitted_params
-
-def split_list(a_list, number):
-    return [a_list[i:i + number] for i in range(0, len(a_list), number)]
-
 def fit_model_worker(args):
     x, y, params = args
     maturity = params[-1]
-    sys.stdout.flush()
     model = NonLinearModel()
     print("Fitting model...")
     result = model.fit(x, y, maturity)
-    sys.stdout.flush()  # Force flushing again
     return result
 
 def compare_params(generated_params, fitted_params):
