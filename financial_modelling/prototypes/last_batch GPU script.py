@@ -1,9 +1,6 @@
 import logging
-from torch import device, tensor, float32, optim, nn, no_grad, cuda, autograd, sqrt
+from torch import device, tensor, float32, optim, no_grad, cuda, sqrt
 import numpy as np
-from torch.cuda.amp import GradScaler, autocast
-from torch.profiler import profile, ProfilerActivity, tensorboard_trace_handler
-
 import matplotlib.pyplot as plt
 
 class NonLinearModel:
@@ -160,9 +157,8 @@ class NonLinearModel:
         total_variance = a + b * (rho * delta + sqrt(delta**2 + sigma**2))
         return sqrt(total_variance) / sqrt(maturity)
 
-
 # Example Usage with Parameter Evolution Tracking
-amount_of_data = 20  # Number of parameter sets
+amount_of_data = 3  # Number of parameter sets
 x_train_list = [tensor(np.linspace(-0.2, 0.2, 50*(i+1)), dtype=float32) for i in range(amount_of_data)]
 maturities = tensor([i+1 for i in range(amount_of_data)], dtype=float32)
 y_train_list = [
@@ -172,7 +168,7 @@ y_train_list = [
                                                 0.0+np.random.random()/10,
                                                 0.2+np.random.random()/10], dtype=float32), maturities[i])
     for i,x in enumerate(x_train_list)
-]
+    ]
 initial_params = np.array([[0.04, 0.1, -0.3, 0.0, 0.2] for _ in range(amount_of_data)])
 initial_params = tensor(initial_params, dtype=float32)
 
@@ -184,7 +180,7 @@ fitted_params = model.fit(x_train_list, y_train_list, maturities, epochs=250, lo
 
 # Predict and Plot Results
 y_pred_list = model.predict(x_train_list, maturities)
-#model.plot_results(x_train_list, y_train_list, y_pred_list, num_sets_to_plot=amount_of_data)
+model.plot_results(x_train_list, y_train_list, y_pred_list, num_sets_to_plot=amount_of_data)
 
 # Plot Parameter Evolution
 #model.plot_param_evolution()
