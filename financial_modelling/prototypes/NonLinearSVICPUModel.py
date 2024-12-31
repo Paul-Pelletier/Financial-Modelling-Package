@@ -6,7 +6,8 @@ class NonLinearModel:
         self.initial_params = initial_params
     
     def fit(self, x_train_list, y_train_list, maturities, epochs = 100, learning_rate = 0.01, log_intervals = 50):
-        optimizer = least_squares(x)
+        
+        optimizer = least_squares()
         pass
 
     @staticmethod
@@ -27,12 +28,15 @@ class NonLinearModel:
         return np.sqrt(total_variance) / np.sqrt(maturity)
 
 
-from financial_modelling.data_acquisition.file_fetcher import FileFetcher
-from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
+def main_test():
+    from financial_modelling.data_acquisition.file_fetcher import FileFetcher
+    from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
-raw_data = FileFetcher().fetch("raw_data.csv", separator = ";")
-processed_data = IVPreprocessor(raw_data).preprocess()
-print("processed data")
-print(processed_data)
-NonLinearModel_instance = NonLinearModel()
+    raw_data = FileFetcher().fetch("raw_data.csv", separator = ";")
+    processed_data = IVPreprocessor(raw_data).preprocess()
+    print(processed_data.head())
+    NonLinearModel_instance = NonLinearModel()
+
+if __name__=="__main__":
+    main_test()
