@@ -22,7 +22,8 @@ class NonLinearModel:
         Returns:
             Tensor of shape (num_points,).
         """
-        a, b, rho, m, sigma = params[0], params[1], params[2], params[3], params[4]
+        a, b, rho, m, sigma = params[:,0].T, params[:,1].T, params[:,2].T, params[:,3].T, params[:,4].T
+        m = m[np.newaxis, :]
         delta = x - m
         total_variance = a + b * (rho * delta + np.sqrt(delta**2 + sigma**2))
         return np.sqrt(total_variance) / np.sqrt(maturity)
