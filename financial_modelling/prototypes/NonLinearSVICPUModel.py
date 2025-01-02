@@ -32,12 +32,8 @@ class NonLinearModel:
             predicted_total_variance = self.total_variance_form(x, params)
             actual_total_variance = (y ** 2) * maturity
             residuals = predicted_total_variance - actual_total_variance
-
-            # Weighting by inverse maturity
-            weight = np.exp(maturity)
-            weighted_residuals = residuals * weight
-
-            return np.sum(weighted_residuals**2)
+            weighted_residuals = (residuals**2)*maturity
+            return np.sum(weighted_residuals)
 
         # Optimize parameters for each subset individually
         for i, (x_train, y_train, maturity) in enumerate(zip(x_train_list, y_train_list, maturities)):
@@ -48,8 +44,8 @@ class NonLinearModel:
                 bounds=[(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)],
                 method="L-BFGS-B",
                 options={
-                    'ftol': 1e-30,  # Function tolerance
-                    'gtol': 1e-20,  # Gradient tolerance
+                    'ftol': 1e-30,   # Function tolerance
+                    'gtol': 1e-20,   # Gradient tolerance
                     'maxiter': 5000  # Maximum iterations
                 }
             )
@@ -57,7 +53,6 @@ class NonLinearModel:
             # Store calibrated parameters
             self.calibrated_params[maturity] = result.x
             print(f"Maturity {maturity}: Optimized parameters: {result.x}")
-
 
     @staticmethod
     def total_variance_form(x, params):
