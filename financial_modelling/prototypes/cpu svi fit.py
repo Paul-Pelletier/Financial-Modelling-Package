@@ -18,6 +18,9 @@ pre_processed_data = IVPreprocessor(data).preprocess()
 #, subset[0]["Implied_Volatility"],  subset[0]["Residual_Maturity"].unique() 
 data_split = [(subset[1]["Log_Moneyness"], subset[1]["Implied_Volatility"]) 
               for subset in pre_processed_data.groupby(['EXPIRE_UNIX'])]
+log_moneyness = [subset[1]["Log_Moneyness"] for subset in pre_processed_data.groupby(['EXPIRE_UNIX'])]
+log_moneyness = pd.DataFrame(log_moneyness).T
+
 data_split = data_split.T
 x_train_split_data, y_train_split_data = data_split
 initial_params = np.array([[0.05, 0.2, 0.0, 0.0, 0.1] for i in maturities.keys()])
