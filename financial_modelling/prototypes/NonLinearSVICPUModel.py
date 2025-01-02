@@ -7,7 +7,7 @@ class NonLinearModel:
         """
         Initialize the model with optional default parameters.
         """
-        self.initial_params = initial_params if initial_params is not None else [0.1, 0.1, 0.0, 0.0, 0.1]
+        self.initial_params = initial_params if initial_params is not None else [0, 0, 0, 0, 0]
         self.calibrated_params = None
 
     def fit(self, x_train_list, y_train_list, maturities):
@@ -34,7 +34,7 @@ class NonLinearModel:
             residuals = predicted_total_variance - actual_total_variance
 
             # Weighting by inverse maturity
-            weight = maturity
+            weight = np.exp(maturity)
             weighted_residuals = residuals * weight
 
             return np.sum(weighted_residuals**2)
@@ -48,7 +48,7 @@ class NonLinearModel:
                 bounds=[(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)],
                 method="L-BFGS-B",
                 options={
-                    'ftol': 1e-25,  # Function tolerance
+                    'ftol': 1e-30,  # Function tolerance
                     'gtol': 1e-20,  # Gradient tolerance
                     'maxiter': 5000  # Maximum iterations
                 }
