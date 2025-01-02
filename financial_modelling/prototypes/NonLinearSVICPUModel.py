@@ -48,9 +48,9 @@ class NonLinearModel:
                 bounds=[(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)],
                 method="L-BFGS-B",
                 options={
-                    'ftol': 1e-20,  # Function tolerance
-                    'gtol': 1e-7,  # Gradient tolerance
-                    'maxiter': 1000  # Maximum iterations
+                    'ftol': 1e-25,  # Function tolerance
+                    'gtol': 1e-20,  # Gradient tolerance
+                    'maxiter': 5000  # Maximum iterations
                 }
             )
 
@@ -152,7 +152,7 @@ class NonLinearModel:
 
 def main_test():
     # Example data with varying subset sizes
-    number_of_sets = 10
+    number_of_sets = 30
     x_train_list = [np.linspace(-0.20, 0.20, 500) for i in range(number_of_sets)]
     
     maturities = [1.5 * (i + 1) for i in range(number_of_sets)]  # Maturities in days
