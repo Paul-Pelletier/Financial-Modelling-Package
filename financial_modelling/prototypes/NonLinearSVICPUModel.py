@@ -12,7 +12,7 @@ class NonLinearModel:
 
     def fit(self, x_train_list, y_train_list, maturities):
         """
-        Fit the SVI model to total variance and store calibrated parameters.
+        Fit the SVI model with weighted loss for each maturity.
 
         Args:
             x_train_list: List of 1D NumPy arrays (log-moneyness values for each maturity).
@@ -27,12 +27,17 @@ class NonLinearModel:
 
         def loss_function(params, x, y, maturity):
             """
-            Loss function for a single maturity group (fits total variance).
+            Loss function for a single maturity group with weighting by inverse maturity.
             """
             predicted_total_variance = self.total_variance_form(x, params)
             actual_total_variance = (y ** 2) * maturity
             residuals = predicted_total_variance - actual_total_variance
-            return np.sum(residuals**2)
+
+            # Weighting by inverse maturity
+            weight = maturity
+            weighted_residuals = residuals * weight
+
+            return np.sum(weighted_residuals**2)
 
         # Optimize parameters for each subset individually
         for i, (x_train, y_train, maturity) in enumerate(zip(x_train_list, y_train_list, maturities)):
@@ -41,12 +46,18 @@ class NonLinearModel:
                 x0=self.initial_params,
                 args=(x_train, y_train, maturity),
                 bounds=[(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)],
-                method="L-BFGS-B"
+                method="L-BFGS-B",
+                options={
+                    'ftol': 1e-20,  # Function tolerance
+                    'gtol': 1e-7,  # Gradient tolerance
+                    'maxiter': 1000  # Maximum iterations
+                }
             )
 
             # Store calibrated parameters
             self.calibrated_params[maturity] = result.x
             print(f"Maturity {maturity}: Optimized parameters: {result.x}")
+
 
     @staticmethod
     def total_variance_form(x, params):
@@ -96,6 +107,7 @@ class NonLinearModel:
         y_train_list = []
         for params, x_train, maturity in zip(params_list, x_train_list, maturities):
             y_train = NonLinearModel.functional_form(x_train, params, maturity)
+            y_train = y_train + np.random.normal(0, 0.0002, size = np.size(y_train))
             y_train_list.append(y_train)
         return y_train_list
 
