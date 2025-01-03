@@ -44,9 +44,9 @@ class NonLinearModel:
                 bounds=[(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)],
                 method="L-BFGS-B",
                 options={
-                    'ftol': 1e-30,   # Function tolerance
-                    'gtol': 1e-20,   # Gradient tolerance
-                    'maxiter': 5000  # Maximum iterations
+                    'ftol': 1e-10,   # Function tolerance
+                    'gtol': 1e-10,   # Gradient tolerance
+                    'maxiter': 200  # Maximum iterations
                 }
             )
 
