@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 import numpy as np
+from scipy.stats import rankdata
 
 class NonLinearModel:
     def __init__(self, initial_params=None):
@@ -9,72 +10,6 @@ class NonLinearModel:
         """
         self.initial_params = initial_params if initial_params is not None else [0, 0, 0, 0, 0]
         self.calibrated_params = None
-
-    def fit(self, x_train_list, y_train_list, maturities):
-        """
-        Fit the SVI model to all maturities simultaneously using masking for varying data sizes.
-
-        Args:
-            x_train_list: List of 1D NumPy arrays (log-moneyness values for each maturity).
-            y_train_list: List of 1D NumPy arrays (implied volatility values for each maturity).
-            maturities: 1D NumPy array of maturities (one per subset).
-        """
-        num_maturities = len(maturities)
-        maturities = np.array(maturities)  # Ensure maturities is a NumPy array
-
-        num_params = 5  # a, b, rho, m, sigma
-
-        # Prepare a mask to align data for vectorized processing
-        max_length = max(len(x) for x in x_train_list)
-        x_padded = np.full((num_maturities, max_length), np.nan)
-        y_padded = np.full((num_maturities, max_length), np.nan)
-        mask = np.zeros((num_maturities, max_length), dtype=bool)
-
-        for i, (x_train, y_train) in enumerate(zip(x_train_list, y_train_list)):
-            x_padded[i, :len(x_train)] = x_train
-            y_padded[i, :len(y_train)] = y_train
-            mask[i, :len(x_train)] = True
-
-        # Vectorized loss function with masking
-        def loss_function(flat_params):
-            """
-            Vectorized loss function for all maturities, accounting for varying sizes with masking.
-            """
-            params = flat_params.reshape(num_maturities, num_params)
-            total_variance = np.zeros_like(x_padded)
-            
-            for i in range(num_maturities):
-                total_variance[i, :] = self.total_variance_form(x_padded[i, :], params[i])
-
-            actual_total_variance = (y_padded**2) * maturities[:, None]
-            residuals = total_variance - actual_total_variance
-            residuals[~mask] = 0  # Ignore residuals for padded elements
-            weighted_residuals = residuals**2 * maturities[:, None]
-            return np.nansum(weighted_residuals)
-
-        # Optimize parameters for all maturities
-        initial_params = np.tile(self.initial_params, num_maturities)
-        bounds = [(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)] * num_maturities
-        result = minimize(
-            loss_function,
-            x0=initial_params,
-            bounds=bounds,
-            method="L-BFGS-B",
-            options={
-                'ftol': 1e-10,  # Function tolerance
-                'gtol': 1e-10,  # Gradient tolerance
-                'maxiter': 10000  # Maximum iterations
-            }
-        )
-
-        # Store calibrated parameters for each maturity
-        self.calibrated_params = {
-            maturities[i]: result.x[i * num_params: (i + 1) * num_params]
-            for i in range(num_maturities)
-        }
-        for maturity, params in self.calibrated_params.items():
-            print(f"Maturity {maturity}: Optimized parameters: {params}")
-
 
     @staticmethod
     def total_variance_form(x, params):
@@ -91,6 +26,86 @@ class NonLinearModel:
         a, b, rho, m, sigma = params
         delta = x - m
         return a + b * (rho * delta + np.sqrt(delta**2 + sigma**2))
+
+    def fit(self, x_train_list, y_train_list, maturities):
+        """
+        Fit the SVI model to all maturities simultaneously using masking for varying data sizes,
+        rank-based weighting, and regularity penalty.
+
+        Args:
+            x_train_list: List of 1D NumPy arrays (log-moneyness values for each maturity).
+            y_train_list: List of 1D NumPy arrays (implied volatility values for each maturity).
+            maturities: List or 1D NumPy array of maturities (one per subset).
+        """
+        maturities = np.array(maturities)  # Ensure maturities is a NumPy array
+        num_maturities = len(maturities)
+        num_params = 5  # a, b, rho, m, sigma
+
+        # Prepare a mask to align data for vectorized processing
+        max_length = max(len(x) for x in x_train_list)
+        x_padded = np.full((num_maturities, max_length), np.nan)
+        y_padded = np.full((num_maturities, max_length), np.nan)
+        mask = np.zeros((num_maturities, max_length), dtype=bool)
+
+        for i, (x_train, y_train) in enumerate(zip(x_train_list, y_train_list)):
+            x_padded[i, :len(x_train)] = x_train
+            y_padded[i, :len(y_train)] = y_train
+            mask[i, :len(x_train)] = True
+
+        # Vectorized loss function with rank-based weighting and regularity penalty
+        def loss_function(flat_params):
+            """
+            Vectorized loss function for all maturities, including rank-based weighting and regularity penalty.
+            """
+            params = flat_params.reshape(num_maturities, num_params)
+            total_variance = np.zeros_like(x_padded)
+            
+            # Compute total variance for all maturities
+            for i in range(num_maturities):
+                total_variance[i, :] = self.total_variance_form(x_padded[i, :], params[i])
+
+            # Residuals computation
+            actual_total_variance = (y_padded**2) * maturities[:, None]
+            residuals = total_variance - actual_total_variance
+            residuals[~mask] = 0  # Ignore residuals for padded elements
+            
+            # Rank-based weighting
+            residuals_squared = residuals**2
+            ranks = np.apply_along_axis(rankdata, axis=1, arr=residuals_squared)
+            weighted_residuals = ranks * residuals_squared * maturities[:, None]
+
+            # Regularity penalty
+            lambda_reg = 1e-4  # Regularization strength
+            param_differences = np.diff(params, axis=0)  # Differences between neighboring maturities
+            regularity_penalty = lambda_reg * np.sum(param_differences**2)
+
+            # Total loss
+            total_loss = np.nansum(weighted_residuals) + regularity_penalty
+            return total_loss
+
+        # Optimize parameters for all maturities
+        initial_params = np.tile(self.initial_params, num_maturities)
+        bounds = [(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)] * num_maturities
+        result = minimize(
+            loss_function,
+            x0=initial_params,
+            bounds=bounds,
+            method="L-BFGS-B",
+            options={
+                'ftol': 1e-10,  # Function tolerance
+                'gtol': 1e-10,  # Gradient tolerance
+                'maxiter': 200  # Maximum iterations
+            }
+        )
+
+        # Store calibrated parameters for each maturity
+        self.calibrated_params = {
+            maturities[i]: result.x[i * num_params: (i + 1) * num_params]
+            for i in range(num_maturities)
+        }
+        for maturity, params in self.calibrated_params.items():
+            print(f"Maturity {maturity}: Optimized parameters: {params}")
+
 
     @staticmethod
     def functional_form(x, params, maturity):
@@ -169,17 +184,17 @@ class NonLinearModel:
 
 def main_test():
     # Example data with varying subset sizes
-    number_of_sets = 30
-    x_train_list = [np.linspace(-0.20, 0.20, 500) for i in range(number_of_sets)]
+    number_of_sets = 5
+    x_train_list = [np.linspace(-0.20, 0.20, 200) for i in range(number_of_sets)]
     
     maturities = [1.5 * (i + 1) for i in range(number_of_sets)]  # Maturities in days
     np.random.seed(23)
     # Ground-truth parameters for generating synthetic data
-    true_params_list = [[0.2 + np.random.rand() / 10, 
-                         0.1 + np.random.rand() / 10,
-                         -0.5 + np.random.rand() / 10,
-                         0.0 + np.random.rand() / 10,
-                         0.15 + np.random.rand() / 10] for i in range(number_of_sets)]
+    true_params_list = [[0.2 + i / 1000, 
+                         0.1 + i / 1000,
+                         -0.5 + i / 1000,
+                         0.0 + i / 1000,
+                         0.15 + i / 1000] for i in range(number_of_sets)]
     
     for param, maturity in zip(true_params_list, maturities):
         print(f"Maturity:{maturity}", param)
