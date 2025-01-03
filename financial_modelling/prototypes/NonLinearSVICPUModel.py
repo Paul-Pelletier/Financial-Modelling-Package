@@ -12,7 +12,7 @@ class NonLinearModel:
 
     def fit(self, x_train_list, y_train_list, maturities):
         """
-        Fit the SVI model with weighted loss for each maturity.
+        Fit the SVI model to all maturities simultaneously using masking for varying data sizes.
 
         Args:
             x_train_list: List of 1D NumPy arrays (log-moneyness values for each maturity).
@@ -20,39 +20,61 @@ class NonLinearModel:
             maturities: 1D NumPy array of maturities (one per subset).
         """
         num_maturities = len(maturities)
+        maturities = np.array(maturities)  # Ensure maturities is a NumPy array
+
         num_params = 5  # a, b, rho, m, sigma
 
-        # Prepare to store calibrated parameters for each maturity
-        self.calibrated_params = {}
+        # Prepare a mask to align data for vectorized processing
+        max_length = max(len(x) for x in x_train_list)
+        x_padded = np.full((num_maturities, max_length), np.nan)
+        y_padded = np.full((num_maturities, max_length), np.nan)
+        mask = np.zeros((num_maturities, max_length), dtype=bool)
 
-        def loss_function(params, x, y, maturity):
+        for i, (x_train, y_train) in enumerate(zip(x_train_list, y_train_list)):
+            x_padded[i, :len(x_train)] = x_train
+            y_padded[i, :len(y_train)] = y_train
+            mask[i, :len(x_train)] = True
+
+        # Vectorized loss function with masking
+        def loss_function(flat_params):
             """
-            Loss function for a single maturity group with weighting by inverse maturity.
+            Vectorized loss function for all maturities, accounting for varying sizes with masking.
             """
-            predicted_total_variance = self.total_variance_form(x, params)
-            actual_total_variance = (y ** 2) * maturity
-            residuals = predicted_total_variance - actual_total_variance
-            weighted_residuals = (residuals**2)*maturity
-            return np.sum(weighted_residuals)
+            params = flat_params.reshape(num_maturities, num_params)
+            total_variance = np.zeros_like(x_padded)
+            
+            for i in range(num_maturities):
+                total_variance[i, :] = self.total_variance_form(x_padded[i, :], params[i])
 
-        # Optimize parameters for each subset individually
-        for i, (x_train, y_train, maturity) in enumerate(zip(x_train_list, y_train_list, maturities)):
-            result = minimize(
-                loss_function,
-                x0=self.initial_params,
-                args=(x_train, y_train, maturity),
-                bounds=[(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)],
-                method="L-BFGS-B",
-                options={
-                    'ftol': 1e-10,   # Function tolerance
-                    'gtol': 1e-10,   # Gradient tolerance
-                    'maxiter': 200  # Maximum iterations
-                }
-            )
+            actual_total_variance = (y_padded**2) * maturities[:, None]
+            residuals = total_variance - actual_total_variance
+            residuals[~mask] = 0  # Ignore residuals for padded elements
+            weighted_residuals = residuals**2 * maturities[:, None]
+            return np.nansum(weighted_residuals)
 
-            # Store calibrated parameters
-            self.calibrated_params[maturity] = result.x
-            print(f"Maturity {maturity}: Optimized parameters: {result.x}")
+        # Optimize parameters for all maturities
+        initial_params = np.tile(self.initial_params, num_maturities)
+        bounds = [(0, None), (0, None), (-1, 1), (-np.inf, np.inf), (0, None)] * num_maturities
+        result = minimize(
+            loss_function,
+            x0=initial_params,
+            bounds=bounds,
+            method="L-BFGS-B",
+            options={
+                'ftol': 1e-10,  # Function tolerance
+                'gtol': 1e-10,  # Gradient tolerance
+                'maxiter': 10000  # Maximum iterations
+            }
+        )
+
+        # Store calibrated parameters for each maturity
+        self.calibrated_params = {
+            maturities[i]: result.x[i * num_params: (i + 1) * num_params]
+            for i in range(num_maturities)
+        }
+        for maturity, params in self.calibrated_params.items():
+            print(f"Maturity {maturity}: Optimized parameters: {params}")
+
 
     @staticmethod
     def total_variance_form(x, params):
