@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from financial_modelling.data_pre_processing.Preprocessor import Preprocessor
+from .Preprocessor import Preprocessor
 
 class IVPreprocessor(Preprocessor):
     def __init__(self, data, spot_col='UNDERLYING_LAST', strike_col='STRIKE',
