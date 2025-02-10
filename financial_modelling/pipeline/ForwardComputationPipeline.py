@@ -43,7 +43,7 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
             "DISCOUNT_FACTOR": None
         }
     expiry_data.loc[:, 'MidCallMidPutPArity'] = expiry_data['C_MID'] - expiry_data['P_MID']
-    
+
     #Compute sample weights based on volume and bid-ask spread
     expiry_data['CALL_WEIGHT'] = expiry_data['C_VOLUME'] / (expiry_data['C_ASK'] - expiry_data['C_BID']).replace(0, 1)
     expiry_data['PUT_WEIGHT'] = expiry_data['P_VOLUME'] / (expiry_data['P_ASK'] - expiry_data['P_BID']).replace(0, 1)
@@ -69,8 +69,8 @@ if __name__ == "__main__":
         unique_dates_query_string = """SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[OptionData]"""
         distinct_quote_unixtime = fetcher.fetch(unique_dates_query_string)
     
-    results_list = []
     for QUOTE_UNIXTIME in distinct_quote_unixtime['QUOTE_UNIXTIME']:
+        results_list = []
         query = f"""
                 SELECT TOP(6302) *
                 FROM [DataMining].[dbo].[OptionData]
