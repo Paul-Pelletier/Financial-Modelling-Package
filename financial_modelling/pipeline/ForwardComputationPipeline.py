@@ -42,19 +42,15 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
             "FORWARD": None,
             "DISCOUNT_FACTOR": None
         }
-    
     expiry_data.loc[:, 'MidCallMidPutPArity'] = expiry_data['C_MID'] - expiry_data['P_MID']
     
-    if expiry_data[['STRIKE']].shape[0] == 0:
-        logging.warning("No valid STRIKE values for expiry %d. Skipping.", expiry)
-        return {
-            "EXPIRE_UNIX": expiry,
-            "FORWARD": None,
-            "DISCOUNT_FACTOR": None
-        }
+    #Compute sample weights based on volume and bid-ask spread
+    expiry_data['CALL_WEIGHT'] = expiry_data['C_VOLUME'] / (expiry_data['C_ASK'] - expiry_data['C_BID']).replace(0, 1)
+    expiry_data['PUT_WEIGHT'] = expiry_data['P_VOLUME'] / (expiry_data['P_ASK'] - expiry_data['P_BID']).replace(0, 1)
+    expiry_data['WEIGHT'] = expiry_data['CALL_WEIGHT'] + expiry_data['PUT_WEIGHT']
     
     model = LinearRegression()
-    model.fit(expiry_data[['STRIKE']], expiry_data['MidCallMidPutPArity'])
+    model.fit(expiry_data[['STRIKE']], expiry_data['MidCallMidPutPArity'], sample_weight=expiry_data['WEIGHT'])
     discountedForward, discountFactor = model.intercept_, -model.coef_[0]
     forward = discountedForward / discountFactor
     return {
