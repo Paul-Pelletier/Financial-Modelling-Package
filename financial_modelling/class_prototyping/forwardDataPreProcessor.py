@@ -1,5 +1,11 @@
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.ForwardComputationPreprocessor import ForwardComputationPreprocessor
+import logging
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+
+# Activate logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 QUOTE_UNIXTIME = 1546439410
 
@@ -36,4 +42,22 @@ drop_criteria = {
 }
 preprocessor = ForwardComputationPreprocessor(raw_data)
 filtered_data = preprocessor.preprocess(drop_criteria)
-print(filtered_data.head)
+forward_list = []
+expiries = filtered_data['EXPIRE_UNIX'].unique()
+expiries_list = []
+for expiry in expiries:
+    expiry_specific_data = filtered_data[filtered_data['EXPIRE_UNIX'] == expiry]
+    expiry_specific_data.loc[:, 'MidCallMidPutPArity'] = expiry_specific_data['C_MID'] - expiry_specific_data['P_MID']
+    model = LinearRegression()
+    model.fit(expiry_specific_data[['STRIKE']], expiry_specific_data['MidCallMidPutPArity'])
+    # Print model coefficients
+    logging.info("Intercept: %f", model.intercept_)
+    logging.info("Slope: %f", model.coef_[0])
+    discountedForward, discountFactor  = model.intercept_, -model.coef_[0]
+    Forward = discountedForward/discountFactor
+    forward_list.append(Forward)
+    expiries_list.append((expiry-QUOTE_UNIXTIME)/365)
+    logging.info("Forward: %f for expiry: %d", Forward, expiry)
+
+plt.plot(expiries, forward_list, label='Forward')
+plt.show()
