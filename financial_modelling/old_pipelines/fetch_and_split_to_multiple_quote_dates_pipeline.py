@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from financial_modelling.utils.utils import check_distinct_quotetime_file_presence
-from financial_modelling.pipeline.export_distinct_unixtimequotedate_pipeline import UniqueQuoteTimeFetcher
+from financial_modelling.big_data_pipelines.export_distinct_unixtimequotedate_pipeline import UniqueQuoteTimeFetcher
 from financial_modelling.data_acquisition.base_fetcher import DataFetcher
 
 class FetchAndSplitToMultipleQuoteDates:

@@ -1,2 +1,2 @@
-from financial_modelling.pipeline.PipelinesAndSteps import PipelineStep
+from financial_modelling.big_data_pipelines.PipelinesAndSteps import PipelineStep
 

@@ -3,13 +3,13 @@ import pandas as pd
 from concurrent.futures import ProcessPoolExecutor
 
 # Replace the following imports with the actual modules/paths in your project
-from financial_modelling.pipeline.fetch_and_split_to_multiple_quote_dates_pipeline import FetchAndSplitToMultipleQuoteDates
+from financial_modelling.big_data_pipelines.fetch_and_split_to_multiple_quote_dates_pipeline import FetchAndSplitToMultipleQuoteDates
 from financial_modelling.utils.utils import get_file_names
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
 # Import the RegularizedSVICalibrationPipeline from your codebase
-from financial_modelling.pipeline.RegularizedSVIPipeline import RegularizedSVICalibrationPipeline
+from financial_modelling.big_data_pipelines.RegularizedSVIPipeline import RegularizedSVICalibrationPipeline
 
 
 def process_date(date, output_folder):

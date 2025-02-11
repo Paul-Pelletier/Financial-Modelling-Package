@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn.metrics import mean_squared_error
 from financial_modelling.modelling.RegularizedSVIModel import RegularizedSVIModel
-from financial_modelling.pipeline.RegularizedSVIPipeline import RegularizedSVICalibrationPipeline
+from financial_modelling.big_data_pipelines.RegularizedSVIPipeline import RegularizedSVICalibrationPipeline
 import torch
 
 class HyperparameterGridSearchPipeline(RegularizedSVICalibrationPipeline):

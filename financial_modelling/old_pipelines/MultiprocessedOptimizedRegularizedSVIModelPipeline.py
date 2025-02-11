@@ -5,13 +5,13 @@ from functools import partial
 import multiprocessing
 
 # Replace the following imports with the actual modules/paths in your project
-from financial_modelling.pipeline.fetch_and_split_to_multiple_quote_dates_pipeline import FetchAndSplitToMultipleQuoteDates
+from financial_modelling.big_data_pipelines.fetch_and_split_to_multiple_quote_dates_pipeline import FetchAndSplitToMultipleQuoteDates
 from financial_modelling.utils.utils import get_file_names
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.IVPreprocessor import IVPreprocessor
 
 # Import the OptimizedRegularizedSVIPipeline from your codebase
-from financial_modelling.pipeline.OptimizedRegularizedSVIModelPipeline import OptimizedRegularizedSVICalibrationPipeline
+from financial_modelling.big_data_pipelines.OptimizedRegularizedSVIModelPipeline import OptimizedRegularizedSVICalibrationPipeline
 
 
 def process_batch(batch, output_folder):
