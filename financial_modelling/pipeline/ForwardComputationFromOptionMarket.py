@@ -4,6 +4,7 @@ import logging
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.ForwardComputationPreprocessor import ForwardComputationPreprocessor
 from sklearn.linear_model import LinearRegression
+import numpy as np
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -64,8 +65,8 @@ def process_quote_time(QUOTE_UNIXTIME):
     results_list = []
     query = f"""
         SELECT TOP(6302) *
-        FROM [DataMining].[dbo].[OptionData]
-        WHERE [QUOTE_UNIXTIME] = '{QUOTE_UNIXTIME}'
+        FROM [DataMining].[dbo].[RawData]
+        WHERE [QUOTE_UNIXTIME1] = '{QUOTE_UNIXTIME}'
     """
     raw_data = fetcher.fetch(query)
     logging.info("Fetched %d rows for QUOTE_UNIXTIME %s", raw_data.shape[0], QUOTE_UNIXTIME)

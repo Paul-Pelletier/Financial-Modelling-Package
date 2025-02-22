@@ -36,7 +36,7 @@ class DatabaseFetcher(DataFetcher):
                 start_time = time.time()
                 self.engine = create_engine(self.connection_string)
                 with self.engine.connect() as conn:
-                    conn.execute(text("SELECT TOP(1) * FROM [DataMining].[dbo].[RawData]"))  # Test connection
+                    conn.execute(text("SELECT TOP(1) * FROM [DataMining].[dbo].[ForwardComputations]"))  # Test connection
                 end_time = time.time()
                 self.connection_time = end_time - start_time
                 logging.info(f"SQLAlchemy engine created in {self.connection_time * 1000:.2f} ms")
@@ -70,7 +70,7 @@ class DatabaseFetcher(DataFetcher):
             # Use SQLAlchemy for connection
             try:
                 with self.engine.connect() as conn:
-                    return pd.read_sql(query, conn)
+                    return pd.read_sql(text(query), conn)
             except Exception as e:
                 raise ValueError(f"Failed to execute query using SQLAlchemy: {e}")
         else:
