@@ -1,6 +1,6 @@
 import pandas as pd
 import pyodbc
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 import time
 import logging
 from financial_modelling.data_acquisition.base_fetcher import DataFetcher
@@ -35,9 +35,11 @@ class DatabaseFetcher(DataFetcher):
             try:
                 start_time = time.time()
                 self.engine = create_engine(self.connection_string)
+                with self.engine.connect() as conn:
+                    conn.execute(text("SELECT TOP(1) * FROM [DataMining].[dbo].[RawData]"))  # Test connection
                 end_time = time.time()
                 self.connection_time = end_time - start_time
-                #print(f"SQLAlchemy engine created in {self.connection_time * 1000:.2f} ms")
+                logging.info(f"SQLAlchemy engine created in {self.connection_time * 1000:.2f} ms")
             except Exception as e:
                 raise ValueError(f"Failed to create SQLAlchemy engine: {e}")
         else:

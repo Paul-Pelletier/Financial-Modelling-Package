@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.ForwardComputationPreprocessor import ForwardComputationPreprocessor
+from sklearn.linear_model import LinearRegression
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -16,6 +17,9 @@ connection_string = (
     "mssql+pyodbc://@DESKTOP-DK79R4I/DataMining?"
     "driver=ODBC+Driver+18+for+SQL+Server&trusted_connection=yes&TrustServerCertificate=yes"
 )
+
+connection_string = "mssql+pyodbc://DESKTOP-DK79R4I/DataMining?driver=ODBC+Driver+18+for+SQL+Server&trusted_connection=yes&TrustServerCertificate=yes"
+
 
 fetcher = DatabaseFetcher(connection_string, use_sqlalchemy=True)
 
@@ -56,6 +60,7 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
 
 # Function to process a specific part of QUOTE_UNIXTIME values
 def process_quote_time(QUOTE_UNIXTIME):
+    logging.info("Processing QUOTE_UNIXTIME: %s", QUOTE_UNIXTIME)
     results_list = []
     query = f"""
         SELECT TOP(6302) *
@@ -63,7 +68,7 @@ def process_quote_time(QUOTE_UNIXTIME):
         WHERE [QUOTE_UNIXTIME] = '{QUOTE_UNIXTIME}'
     """
     raw_data = fetcher.fetch(query)
-    
+    logging.info("Fetched %d rows for QUOTE_UNIXTIME %s", raw_data.shape[0], QUOTE_UNIXTIME)
     if raw_data.empty:
         logging.warning("No data found for QUOTE_UNIXTIME %s", QUOTE_UNIXTIME)
         return
@@ -97,6 +102,7 @@ if __name__ == "__main__":
     try:
         logging.info("Reading from %s", csv_file)
         distinct_quote_unixtime = pd.read_csv(csv_file)['QUOTE_UNIXTIME'].tolist()
+        logging.info("Number of rows in the csv file: %s", len(distinct_quote_unixtime))
     except FileNotFoundError:
         logging.error("File not found: %s", csv_file)
         unique_dates_query_string = "SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[RawData]"
