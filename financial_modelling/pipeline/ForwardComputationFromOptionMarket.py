@@ -1,11 +1,8 @@
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import logging
-import numpy as np
-from sklearn.linear_model import LinearRegression
 from financial_modelling.data_acquisition.database_fetcher import DatabaseFetcher
 from financial_modelling.data_pre_processing.ForwardComputationPreprocessor import ForwardComputationPreprocessor
-import math
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -13,12 +10,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 DB_CONFIG = {
     'server': 'DESKTOP-DK79R4I',
     'database': 'DataMining',
-    }
+}
 
 connection_string = (
     "mssql+pyodbc://@DESKTOP-DK79R4I/DataMining?"
     "driver=ODBC+Driver+18+for+SQL+Server&trusted_connection=yes&TrustServerCertificate=yes"
-    )
+)
 
 fetcher = DatabaseFetcher(connection_string, use_sqlalchemy=True)
 
@@ -58,43 +55,41 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
     }
 
 # Function to process a specific part of QUOTE_UNIXTIME values
-def process_quote_times_part(quote_times_part):
-    for QUOTE_UNIXTIME in quote_times_part:
-        results_list = []
+def process_quote_time(QUOTE_UNIXTIME):
+    results_list = []
+    query = f"""
+        SELECT TOP(6302) *
+        FROM [DataMining].[dbo].[OptionData]
+        WHERE [QUOTE_UNIXTIME] = '{QUOTE_UNIXTIME}'
+    """
+    raw_data = fetcher.fetch(query)
+    
+    if raw_data.empty:
+        logging.warning("No data found for QUOTE_UNIXTIME %s", QUOTE_UNIXTIME)
+        return
+    
+    expiries = raw_data['EXPIRE_UNIX'].unique()
 
-        query = f"""
-            SELECT TOP(6302) *
-            FROM [DataMining].[dbo].[OptionData]
-            WHERE [QUOTE_UNIXTIME] = '{QUOTE_UNIXTIME}'
-        """
-        raw_data = fetcher.fetch(query)
-        
-        if raw_data.empty:
-            logging.warning("No data found for QUOTE_UNIXTIME %s", QUOTE_UNIXTIME)
-            continue
-        
-        expiries = raw_data['EXPIRE_UNIX'].unique()
+    drop_criteria = {
+        'C_IV': lambda x: x.notna() & (x > 0.05),
+        'P_IV': lambda x: x.notna() & (x > 0.05),
+        'C_VOLUME': lambda x: x.notna() & (x >= 1),
+        'P_VOLUME': lambda x: x.notna() & (x >= 1)
+    }
+    
+    preprocessor = ForwardComputationPreprocessor(raw_data)
+    filtered_data = preprocessor.preprocess(drop_criteria)
 
-        drop_criteria = {
-            'C_IV': lambda x: x.notna() & (x > 0.05),
-            'P_IV': lambda x: x.notna() & (x > 0.05),
-            'C_VOLUME': lambda x: x.notna() & (x >= 1),
-            'P_VOLUME': lambda x: x.notna() & (x >= 1)
-        }
-        
-        preprocessor = ForwardComputationPreprocessor(raw_data)
-        filtered_data = preprocessor.preprocess(drop_criteria)
+    for expiry in expiries:
+        result = compute_forward_and_discountFactor((expiry, filtered_data))
+        result["QUOTE_UNIXTIME"] = QUOTE_UNIXTIME
+        logging.info("Forward: %s for expiry: %d", str(result["FORWARD"]), result["EXPIRE_UNIX"])
+        results_list.append(result)
 
-        for expiry in expiries:
-            result = compute_forward_and_discountFactor((expiry, filtered_data))
-            result["QUOTE_UNIXTIME"] = QUOTE_UNIXTIME
-            logging.info("Forward: %s for expiry: %d", str(result["FORWARD"]), result["EXPIRE_UNIX"])
-            results_list.append(result)
-
-        output_csv = f"E:\\ForwardComputations\\forward_computation_{QUOTE_UNIXTIME}.csv"
-        results_df = pd.DataFrame(results_list)
-        results_df.to_csv(output_csv, index=False)
-        logging.info("Results exported to %s", output_csv)
+    output_csv = f"E:\\ForwardComputations\\forward_computation_{QUOTE_UNIXTIME}.csv"
+    results_df = pd.DataFrame(results_list)
+    results_df.to_csv(output_csv, index=False)
+    logging.info("Results exported to %s", output_csv)
 
 if __name__ == "__main__":
     csv_file = "E:\\ForwardComputations\\outputDistinctQuotesTimes.csv"
@@ -107,11 +102,8 @@ if __name__ == "__main__":
         unique_dates_query_string = "SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[RawData]"
         distinct_quote_unixtime = fetcher.fetch(unique_dates_query_string)['QUOTE_UNIXTIME'].tolist()
 
-    # Split `distinct_quote_unixtime` into exactly 15 equal parts
-    num_parts = 15
-    part_size = math.ceil(len(distinct_quote_unixtime) / num_parts)  # Ensures even distribution
-    parts = [distinct_quote_unixtime[i:i + part_size] for i in range(0, len(distinct_quote_unixtime), part_size)]
-
-    # Process parts in parallel
-    with ProcessPoolExecutor(max_workers=num_parts) as executor:
-        executor.map(process_quote_times_part, parts)
+    # Limit concurrency to avoid overloading the database
+    max_workers = min(10, len(distinct_quote_unixtime))  # Use up to 10 threads or fewer
+    max_workers = 2
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        executor.map(process_quote_time, distinct_quote_unixtime)
