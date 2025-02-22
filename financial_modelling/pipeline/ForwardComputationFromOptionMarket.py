@@ -13,12 +13,12 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 DB_CONFIG = {
     'server': 'DESKTOP-DK79R4I',
     'database': 'DataMining',
-}
+    }
 
 connection_string = (
     "mssql+pyodbc://@DESKTOP-DK79R4I/DataMining?"
     "driver=ODBC+Driver+18+for+SQL+Server&trusted_connection=yes&TrustServerCertificate=yes"
-)
+    )
 
 fetcher = DatabaseFetcher(connection_string, use_sqlalchemy=True)
 
@@ -32,7 +32,8 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
         return {
             "EXPIRE_UNIX": expiry,
             "FORWARD": None,
-            "DISCOUNT_FACTOR": None
+            "DISCOUNT_FACTOR": None,
+            "R_SQUARED": None
         }
     
     expiry_data.loc[:, 'MidCallMidPutPArity'] = expiry_data['C_MID'] - expiry_data['P_MID']
@@ -47,11 +48,13 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
     
     discountedForward, discountFactor = model.intercept_, -model.coef_[0]
     forward = discountedForward / discountFactor
+    r_squared = model.score(expiry_data[['STRIKE']], expiry_data['MidCallMidPutPArity'], sample_weight=expiry_data['WEIGHT'])
     
     return {
         "EXPIRE_UNIX": expiry,
         "FORWARD": forward,
-        "DISCOUNT_FACTOR": discountFactor
+        "DISCOUNT_FACTOR": discountFactor,
+        "R_SQUARED": r_squared
     }
 
 # Function to process a specific part of QUOTE_UNIXTIME values
@@ -101,7 +104,7 @@ if __name__ == "__main__":
         distinct_quote_unixtime = pd.read_csv(csv_file)['QUOTE_UNIXTIME'].tolist()
     except FileNotFoundError:
         logging.error("File not found: %s", csv_file)
-        unique_dates_query_string = "SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[OptionData]"
+        unique_dates_query_string = "SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[RawData]"
         distinct_quote_unixtime = fetcher.fetch(unique_dates_query_string)['QUOTE_UNIXTIME'].tolist()
 
     # Split `distinct_quote_unixtime` into exactly 15 equal parts
