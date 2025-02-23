@@ -13,12 +13,43 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 MAX_WORKERS = 12
 
 # File path (replace with your actual file path)
-FILE_PATH = 'F:\\SPX Data\\2019\\spx_01x_201910.txt'
-OUTPUT_DIR = "E:\\ForwardComputations\\FittedData\\"
+FILE_PATH = 'F:\\SPX Data\\2019\\spx_01x_201901.txt'
+OUTPUT_DIR = "E:\\ForwardComputations\\FittedData\\Janvier\\"
+
+import sys
+
+# Read arguments from command line
+FILE_PATH = sys.argv[1]  # First argument: input file path
+OUTPUT_DIR = sys.argv[2]  # Second argument: output directory
 SEPARATOR = ','  # Adjust if necessary
 
 # Initialize fetcher
 fetcher = FileFetcher()
+
+def interpolate_ATM_IV(expiry_data, forward):
+    logging.info("Interpolating ATM IV for expiry %d", expiry_data['EXPIRE_UNIX'].values[0])
+    """Interpolates ATM implied volatility (IV) at the forward level."""
+    strikes = expiry_data['STRIKE'].values
+    call_ivs = expiry_data['C_IV'].values
+    put_ivs = expiry_data['P_IV'].values
+    
+    if forward <= strikes.min():
+        atm_call_iv = call_ivs[np.argmin(strikes)]
+        atm_put_iv = put_ivs[np.argmin(strikes)]
+    elif forward >= strikes.max():
+        atm_call_iv = call_ivs[np.argmax(strikes)]
+        atm_put_iv = put_ivs[np.argmax(strikes)]
+    else:
+        lower_idx = np.searchsorted(strikes, forward) - 1
+        upper_idx = lower_idx + 1
+        
+        w = (forward - strikes[lower_idx]) / (strikes[upper_idx] - strikes[lower_idx])
+        atm_call_iv = (1 - w) * call_ivs[lower_idx] + w * call_ivs[upper_idx]
+        atm_put_iv = (1 - w) * put_ivs[lower_idx] + w * put_ivs[upper_idx]
+    
+    atm_avg_iv = (atm_call_iv + atm_put_iv) / 2
+    
+    return atm_call_iv, atm_put_iv, atm_avg_iv
 
 def compute_forward_and_discountFactor(expiry_raw_data_tuple):
     """Compute forward price, discount factor, and R-squared."""
@@ -31,7 +62,10 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
             "EXPIRE_UNIX": expiry,
             "FORWARD": None,
             "DISCOUNT_FACTOR": None,
-            "R_SQUARED": None
+            "R_SQUARED": None,
+            "ATM_CALL_IV": None,
+            "ATM_PUT_IV": None,
+            "ATM_AVG_IV": None
         }
     
     logging.info("Computing mid price for calls and puts")
@@ -53,11 +87,17 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
     forward = discountedForward / discountFactor
     r_squared = model.score(expiry_data[['STRIKE']], expiry_data['MidCallMidPutParity'], sample_weight=expiry_data['WEIGHT'])
     
+    atm_call_iv, atm_put_iv, atm_avg_iv = interpolate_ATM_IV(expiry_data, forward)
+
+
     return {
         "EXPIRE_UNIX": expiry,
         "FORWARD": forward,
         "DISCOUNT_FACTOR": discountFactor,
-        "R_SQUARED": r_squared
+        "R_SQUARED": r_squared,
+        "ATM_CALL_IV": atm_call_iv,
+        "ATM_PUT_IV": atm_put_iv,
+        "ATM_AVG_IV": atm_avg_iv
     }
 
 def process_quote_time(quote_unixtime, raw_data):
