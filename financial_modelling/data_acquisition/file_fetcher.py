@@ -1,5 +1,6 @@
 import pandas as pd
 from .base_fetcher import DataFetcher
+import logging
 
 class FileFetcher(DataFetcher):
     """
@@ -27,6 +28,8 @@ class FileFetcher(DataFetcher):
             If the file cannot be loaded.
         """
         try:
+            logging.info(f"Loading data from file: {filepath}")
             return pd.read_csv(filepath, sep=separator, **kwargs)
+            logging.info(f"Data loaded from file: {filepath}")
         except Exception as e:
             raise ValueError(f"Failed to load file: {e}")
