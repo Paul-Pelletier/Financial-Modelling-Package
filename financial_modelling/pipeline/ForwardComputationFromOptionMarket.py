@@ -34,14 +34,18 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
             "R_SQUARED": None
         }
     
+    logging.info("Computing mid price for calls and puts")
     expiry_data['C_MID'] = (expiry_data['C_BID'] + expiry_data['C_ASK']) / 2
     expiry_data['P_MID'] = (expiry_data['P_BID'] + expiry_data['P_ASK']) / 2
     expiry_data['MidCallMidPutParity'] = expiry_data['C_MID'] - expiry_data['P_MID']
 
+    logging.info("Computing weights for calls and puts")
     expiry_data['CALL_WEIGHT'] = expiry_data['C_VOLUME'] / (expiry_data['C_ASK'] - expiry_data['C_BID']).replace(0, 1)
     expiry_data['PUT_WEIGHT'] = expiry_data['P_VOLUME'] / (expiry_data['P_ASK'] - expiry_data['P_BID']).replace(0, 1)
-    expiry_data['WEIGHT'] = np.abs(expiry_data['CALL_WEIGHT'] + expiry_data['PUT_WEIGHT'])
+    expiry_data['WEIGHT'] = np.abs(expiry_data['CALL_WEIGHT']) + np.abs(expiry_data['PUT_WEIGHT'])
+    expiry_data['WEIGHT'] /= expiry_data['WEIGHT'].sum()
 
+    logging.info("Fitting linear regression model")
     model = LinearRegression()
     model.fit(expiry_data[['STRIKE']], expiry_data['MidCallMidPutParity'], sample_weight=expiry_data['WEIGHT'])
     
@@ -86,7 +90,9 @@ def main():
     """Main function to load data and process QUOTE_UNIXTIME values in parallel."""
     logging.info("Fetching data from file: %s", FILE_PATH)
     raw_data = fetcher.fetch(filepath=FILE_PATH, separator=SEPARATOR)
-    
+    raw_data.columns = raw_data.columns.str.strip().str.replace(r'\[', '', regex=True).str.replace(r'\]', '', regex=True)
+    logging.info("Data loaded successfully")
+    logging.info("Finding unique values in QUOTE_UNIXTIME column")
     unique_quote_unixtime = raw_data['QUOTE_UNIXTIME'].unique()
     logging.info("Found %d unique QUOTE_UNIXTIME values", len(unique_quote_unixtime))
     
