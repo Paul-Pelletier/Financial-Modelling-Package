@@ -13,8 +13,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 MAX_WORKERS = 12
 
 # File path (replace with your actual file path)
-FILE_PATH = 'F:\\SPX Data\\2019\\spx_01x_201901.txt'
-OUTPUT_DIR = "E:\\ForwardComputations\\FittedData\\Janvier\\"
+#FILE_PATH = 'F:\\SPX Data\\2019\\spx_01x_201901.txt'
+#OUTPUT_DIR = "E:\\ForwardComputations\\FittedData\\Janvier\\"
 
 import sys
 
