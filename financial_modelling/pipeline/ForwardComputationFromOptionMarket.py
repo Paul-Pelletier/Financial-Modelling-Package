@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import pandas as pd
 import logging
+import os
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from financial_modelling.data_acquisition.file_fetcher import FileFetcher
@@ -122,7 +123,8 @@ def process_quote_time(quote_unixtime, raw_data):
         result["QUOTE_UNIXTIME"] = quote_unixtime
         results_list.append(result)
     
-    output_csv = f"{OUTPUT_DIR}forward_computation_{quote_unixtime}.csv"
+    #output_csv = f"{OUTPUT_DIR}forward_computation_{quote_unixtime}.csv"
+    output_csv = os.path.join(OUTPUT_DIR, f"forward_computation_{quote_unixtime}.csv")
     pd.DataFrame(results_list).to_csv(output_csv, index=False)
     logging.info("Results exported to %s", output_csv)
 

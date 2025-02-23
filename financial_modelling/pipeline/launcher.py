@@ -7,7 +7,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Paths
-CSV_FILE = 'F:\\SPX Data\\filePaths.csv'  # CSV containing raw data file paths
+CSV_FILE = 'F:\\SPX Data\\filesPaths.csv'  # CSV containing raw data file paths
 OUTPUT_BASE_DIR = "E:\\ForwardComputations\\FittedData\\"  # Base output directory
 PROCESSING_SCRIPT = "C:\\Users\\paula\\OneDrive\\Documents\\Financial Modelling Package\\financial_modelling\\pipeline\\ForwardComputationFromOptionMarket.py"  # Path to your processing script
 JOURNAL_FILE = "E:\\ForwardComputations\\processing_journal.csv"  # Log of processed files
@@ -44,7 +44,8 @@ for file_path in file_list_df['FilePath']:
     # Launch the processing script
     logging.info(f"Processing file: {file_path}, saving results in {output_dir}")
     try:
-        subprocess.run(["python", PROCESSING_SCRIPT, file_path, output_dir], check=True)
+        PYTHON_EXECUTABLE = "C:\\Users\\paula\\OneDrive\\Documents\\Financial Modelling Package\\.venv\\Scripts\\python.exe"
+        subprocess.run([PYTHON_EXECUTABLE, PROCESSING_SCRIPT, file_path, output_dir], check=True)
         processed_entries.append([year_month])
     except subprocess.CalledProcessError:
         logging.error(f"Error processing file: {file_path}")
