@@ -37,20 +37,23 @@ def compute_forward_and_discountFactor(expiry_raw_data_tuple):
             "DISCOUNT_FACTOR": None,
             "R_SQUARED": None
         }
-    
-    expiry_data.loc[:, 'MidCallMidPutPArity'] = expiry_data['C_MID'] - expiry_data['P_MID']
+    logging.info("Computing Mid Call - Mid Put Parity for expiry: %d", expiry)    
+    expiry_data.loc[:, 'MidCallMidPutParity'] = expiry_data['C_MID'] - expiry_data['P_MID']
 
     # Compute sample weights based on volume and bid-ask spread
+    logging.info("Computing sample weights for expiry: %d", expiry)
     expiry_data['CALL_WEIGHT'] = expiry_data['C_VOLUME'] / (expiry_data['C_ASK'] - expiry_data['C_BID']).replace(0, 1)
     expiry_data['PUT_WEIGHT'] = expiry_data['P_VOLUME'] / (expiry_data['P_ASK'] - expiry_data['P_BID']).replace(0, 1)
     expiry_data['WEIGHT'] = np.abs(expiry_data['CALL_WEIGHT'] + expiry_data['PUT_WEIGHT'])
     
+    logging.info("Fitting linear regression model for expiry: %d", expiry)
     model = LinearRegression()
-    model.fit(expiry_data[['STRIKE']], expiry_data['MidCallMidPutPArity'], sample_weight=expiry_data['WEIGHT'])
+    model.fit(expiry_data[['STRIKE']], expiry_data['MidCallMidPutParity'], sample_weight=expiry_data['WEIGHT'])
     
+    logging.info("Extracting forward and discount factor for expiry: %d", expiry)
     discountedForward, discountFactor = model.intercept_, -model.coef_[0]
     forward = discountedForward / discountFactor
-    r_squared = model.score(expiry_data[['STRIKE']], expiry_data['MidCallMidPutPArity'], sample_weight=expiry_data['WEIGHT'])
+    r_squared = model.score(expiry_data[['STRIKE']], expiry_data['MidCallMidPutParity'], sample_weight=expiry_data['WEIGHT'])
     
     return {
         "EXPIRE_UNIX": expiry,
@@ -65,8 +68,8 @@ def process_quote_time(QUOTE_UNIXTIME):
     results_list = []
     query = f"""
         SELECT TOP(6302) *
-        FROM [DataMining].[dbo].[RawData]
-        WHERE [QUOTE_UNIXTIME1] = '{QUOTE_UNIXTIME}'
+        FROM [DataMining].[dbo].[TestOptionChain]
+        WHERE [QUOTE_UNIXTIME] = '{QUOTE_UNIXTIME}'
     """
     raw_data = fetcher.fetch(query)
     logging.info("Fetched %d rows for QUOTE_UNIXTIME %s", raw_data.shape[0], QUOTE_UNIXTIME)
@@ -76,6 +79,7 @@ def process_quote_time(QUOTE_UNIXTIME):
     
     expiries = raw_data['EXPIRE_UNIX'].unique()
 
+    logging.info("Apllying P_IV, C_IV, P_VOLUME, C_VOLUME filters")
     drop_criteria = {
         'C_IV': lambda x: x.notna() & (x > 0.05),
         'P_IV': lambda x: x.notna() & (x > 0.05),
@@ -83,34 +87,36 @@ def process_quote_time(QUOTE_UNIXTIME):
         'P_VOLUME': lambda x: x.notna() & (x >= 1)
     }
     
+    logging.info("Preprocessing data for QUOTE_UNIXTIME: %s", QUOTE_UNIXTIME)
     preprocessor = ForwardComputationPreprocessor(raw_data)
     filtered_data = preprocessor.preprocess(drop_criteria)
 
+    logging.info("Calling the computing function for forward and discount factor for QUOTE_UNIXTIME: %s", QUOTE_UNIXTIME)
     for expiry in expiries:
         result = compute_forward_and_discountFactor((expiry, filtered_data))
         result["QUOTE_UNIXTIME"] = QUOTE_UNIXTIME
         logging.info("Forward: %s for expiry: %d", str(result["FORWARD"]), result["EXPIRE_UNIX"])
         results_list.append(result)
 
-    output_csv = f"E:\\ForwardComputations\\forward_computation_{QUOTE_UNIXTIME}.csv"
+    output_csv = f"E:\\ForwardComputations\\FittedData\\forward_computation_{QUOTE_UNIXTIME}.csv"
     results_df = pd.DataFrame(results_list)
     results_df.to_csv(output_csv, index=False)
     logging.info("Results exported to %s", output_csv)
 
 if __name__ == "__main__":
     csv_file = "E:\\ForwardComputations\\outputDistinctQuotesTimes.csv"
-    
     try:
         logging.info("Reading from %s", csv_file)
         distinct_quote_unixtime = pd.read_csv(csv_file)['QUOTE_UNIXTIME'].tolist()
         logging.info("Number of rows in the csv file: %s", len(distinct_quote_unixtime))
     except FileNotFoundError:
         logging.error("File not found: %s", csv_file)
-        unique_dates_query_string = "SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[RawData]"
+        unique_dates_query_string = "SELECT DISTINCT QUOTE_UNIXTIME FROM [DataMining].[dbo].[TestOptionChain]"
         distinct_quote_unixtime = fetcher.fetch(unique_dates_query_string)['QUOTE_UNIXTIME'].tolist()
+        pd.DataFrame(distinct_quote_unixtime, columns=['QUOTE_UNIXTIME']).to_csv(csv_file, index=False)
 
     # Limit concurrency to avoid overloading the database
     max_workers = min(10, len(distinct_quote_unixtime))  # Use up to 10 threads or fewer
-    max_workers = 2
+    max_workers = 12
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         executor.map(process_quote_time, distinct_quote_unixtime)
