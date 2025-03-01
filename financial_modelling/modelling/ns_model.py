@@ -2,17 +2,15 @@ import numpy as np
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
-class NelsonSiegelSvensson:
+class NelsonSiegel:
     """
-    Nelson-Siegel-Svensson (NSS) yield curve model.
+    Nelson-Siegel- (NSS) yield curve model.
     
     Parameters:
     - beta0: Long-term level of the forward rate
     - beta1: Short-term component
-    - beta2: Medium-term hump
-    - beta3: Long-term hump
+    - beta2: Long-term hump
     - lambda1: Decay factor for the first hump
-    - lambda2: Decay factor for the second hump
     """
     
     def __init__(self, beta0=2000, beta1=2000, beta2=2000, lambda1=0.1):
@@ -26,7 +24,7 @@ class NelsonSiegelSvensson:
     @staticmethod
     def forward_curve(t, beta0, beta1, beta2, lambda1):
         """
-        Nelson-Siegel-Svensson forward rate function.
+        Nelson-Siegel- forward rate function.
         """
         term1 = beta0
         term2 = beta1 * np.exp(t / lambda1)
@@ -63,14 +61,14 @@ class NelsonSiegelSvensson:
         predicted_rates = self.predict(maturities)
 
         plt.figure(figsize=(10, 5))
-        plt.plot(maturities, predicted_rates, label="Fitted NSS Curve", linewidth=2)
+        plt.plot(maturities, predicted_rates, label="Fitted NS Curve", linewidth=2)
         if observed_rates is not None:
             plt.scatter(self.observed_maturities, self.observed_rates, color='red', label="Observed Data")
         #plt.axvline(x=self.lambda1, color='red', linestyle="--", label=f"1st Hump (λ1={self.lambda1:.2f})")
         #plt.axvline(x=self.lambda2, color='blue', linestyle="--", label=f"2nd Hump (λ2={self.lambda2:.2f})")
         plt.xlabel("Maturity (years)")
         plt.ylabel("Term Structure")
-        plt.title("Nelson-Siegel-Svensson parameterization")
+        plt.title("Nelson-Siegel parameterization")
         plt.legend()
         plt.grid()
         plt.show()

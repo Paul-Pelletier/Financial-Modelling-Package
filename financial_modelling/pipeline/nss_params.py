@@ -1,4 +1,4 @@
-from financial_modelling.modelling.nss_model import NelsonSiegelSvensson
+from financial_modelling.modelling.ns_model import NelsonSiegelSvensson
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
