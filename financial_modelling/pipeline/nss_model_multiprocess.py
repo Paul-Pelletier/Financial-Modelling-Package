@@ -38,11 +38,12 @@ def process_file(file_path):
             "beta0": nss.beta0, "beta1": nss.beta1, "beta2": nss.beta2,
             "beta3": nss.beta3, "lambda1": nss.lambda1, "lambda2": nss.lambda2
         }])
-        fitted_params.to_csv(output_file, index=False)
+        fitted_params.to_csv(output_file, index=False)fg
 
         print(f"✅ Processed: {file_path} → {output_file}")
     
     except Exception as e:
+        """Exclut les paramètres n'ayant pas convergé. A corriger parce que ça converge quand même suffisamment"""
         print(f"❌ Error processing {file_path}: {e}")
 
 def scan_and_process():
