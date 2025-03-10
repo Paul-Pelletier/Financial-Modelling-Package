@@ -2,8 +2,8 @@ import os
 import pandas as pd
 
 # Define directories
-INPUT_DIR = "E:\\ForwardComputations\\FittedParams"  # Source folder
-OUTPUT_DIR = "E:\\ForwardComputations\\FittedAggregated"  # Destination for yearly aggregation
+INPUT_DIR = "E:\\ForwardParametrization\\FittedParams"  # Source folder
+OUTPUT_DIR = "E:\\ForwardParametrization\\FittedAggregated"  # Destination for yearly aggregation
 
 # Ensure the output directory exists
 os.makedirs(OUTPUT_DIR, exist_ok=True)
